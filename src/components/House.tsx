@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { USER_COLORS } from '../data'
 import { needsInstallForNotifications, notifyPermission, requestNotifyPermission, type NotifyPermission } from '../notify'
-import { deleteProfile, forgetDevice, selectProfile, setKitchenName, updateProfile, useKitchen, useMe } from '../store'
+import { deleteProfile, forgetDevice, selectProfile, setAvatar, setKitchenName, updateProfile, useKitchen, useMe } from '../store'
 import { ICON_SIZES } from '../config'
 import { UI } from '../icons'
+import { AvatarCreator } from './AvatarCreator'
+import { ColorPicker } from './ColorPicker'
 import { FeedbackList, FeedbackSheet } from './Feedback'
 import { Avatar, Sheet } from './ui'
 
@@ -16,20 +17,14 @@ export default function House() {
   const [confirm, setConfirm] = useState<'profile' | 'device' | null>(null)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [copied, setCopied] = useState(false)
-  const iosHint = needsInstallForNotifications()
-  const inviteUrl = `${location.origin}/?join=${s.inviteCode}`
+  const [creatorOpen, setCreatorOpen] = useState(false)
+  // Notifications can't be offered here (e.g. iPhone outside the home-screen app): hide the section.
+  const canNotify = !needsInstallForNotifications() && perm !== 'unsupported'
 
-  const share = async () => {
-    const text = `Join our kitchen on Cupboard — kitchen code ${s.inviteCode}`
-    try {
-      if (navigator.share) await navigator.share({ title: 'Kitchen Cupboard', text, url: inviteUrl })
-      else {
-        await navigator.clipboard.writeText(`${text}\n${inviteUrl}`)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
-      }
-    } catch {
-      /* share sheet dismissed */
+  const copyCode = async () => {
+    if (await copyText(s.inviteCode)) {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
     }
   }
 
@@ -59,12 +54,18 @@ export default function House() {
             <span className="muted small">Kitchen code (for new phones)</span>
             <strong className="invite-code">{s.inviteCode}</strong>
           </div>
-          <button className="btn btn-sm btn-primary" onClick={share}>
-            {copied ? <><UI.check size={16} /> Copied</> : <><UI.share size={16} /> Invite</>}
+          <button
+            className={'copy-btn' + (copied ? ' copied' : '')}
+            onClick={copyCode}
+            aria-label={copied ? 'Kitchen code copied' : 'Copy kitchen code'}
+            title={copied ? 'Copied' : 'Copy code'}
+          >
+            {copied ? <UI.copied size={20} /> : <UI.copy size={20} />}
           </button>
         </div>
       </section>
 
+      {canNotify && (
       <section className="card">
         <h3 className="section-title">Notifications</h3>
         {perm === 'granted' ? (
@@ -75,11 +76,6 @@ export default function House() {
           <p className="icon-line">
             <UI.warning size={ICON_SIZES.button} /> Blocked. Allow notifications for this site in your browser settings.
           </p>
-        ) : iosHint || perm === 'unsupported' ? (
-          <p className="icon-line">
-            <UI.install size={ICON_SIZES.button} /> On iPhone, first tap <strong>Share → Add to Home Screen</strong>, then open Cupboard from your home screen
-            to turn on notifications.
-          </p>
         ) : (
           <>
             <p className="muted">Get a phone alert when someone starts a grocery run or asks you for something.</p>
@@ -89,6 +85,7 @@ export default function House() {
           </>
         )}
       </section>
+      )}
 
       <section className="card">
         <div className="section-row">
@@ -97,6 +94,22 @@ export default function House() {
             <UI.switchProfile size={16} /> Switch profile
           </button>
         </div>
+        <button className="avatar-row" onClick={() => setCreatorOpen(true)}>
+          <Avatar user={me} size={52} />
+          <span className="avatar-row-text">
+            <strong>{me.avatar ? 'Your avatar' : 'Add an avatar'}</strong>
+            <small>{me.avatar ? 'Tap to change or remove it' : 'Showing your initials for now'}</small>
+          </span>
+          <UI.chevron size={18} aria-hidden />
+        </button>
+        <AvatarCreator
+          open={creatorOpen}
+          onClose={() => setCreatorOpen(false)}
+          background={me.color}
+          initial={me.avatar}
+          onSave={setAvatar}
+          onRemove={me.avatar ? () => setAvatar(null) : undefined}
+        />
         <form
           className="inline-form"
           onSubmit={(e) => {
@@ -109,17 +122,11 @@ export default function House() {
             Save
           </button>
         </form>
-        <div className="swatches">
-          {USER_COLORS.map((c) => (
-            <button
-              key={c}
-              className={'swatch' + (c === me.color ? ' on' : '')}
-              style={{ background: c }}
-              onClick={() => updateProfile({ color: c })}
-              aria-label={`Use colour ${c}`}
-            />
-          ))}
-        </div>
+        <ColorPicker
+          value={me.color}
+          onChange={(c) => updateProfile({ color: c })}
+          taken={s.users.filter((u) => u.id !== me.id).map((u) => ({ color: u.color, name: u.name }))}
+        />
       </section>
 
       <section className="card">
@@ -186,4 +193,23 @@ export default function House() {
       </Sheet>
     </div>
   )
+}
+
+/** Copy text to the clipboard, with a fallback for browsers without the Clipboard API. */
+async function copyText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text)
+    return true
+  } catch {
+    const el = document.createElement('textarea')
+    el.value = text
+    el.setAttribute('readonly', '')
+    el.style.position = 'fixed'
+    el.style.opacity = '0'
+    document.body.appendChild(el)
+    el.select()
+    const ok = document.execCommand('copy')
+    el.remove()
+    return ok
+  }
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { ICON_SIZES } from '../config'
 import { CATEGORIES, categoryById, suggestFor } from '../data'
 import { CATEGORY_ICONS, DEFAULT_ITEM_ICON, ITEM_ICONS, ItemIcon, UI } from '../icons'
@@ -16,7 +16,7 @@ import {
   useMe,
 } from '../store'
 import type { CategoryId, Item, User } from '../types'
-import { Avatar, ItemJar, Sheet, timeAgo } from './ui'
+import { Avatar, ItemCard, Sheet, timeAgo } from './ui'
 
 export default function Cupboard() {
   const s = useKitchen()
@@ -34,9 +34,11 @@ export default function Cupboard() {
         items: s.items
           .filter((i) => i.category === c.id && (!q || i.name.toLowerCase().includes(q)))
           .sort((a, b) => (b.owners.length > 0 ? 1 : 0) - (a.owners.length > 0 ? 1 : 0) || a.name.localeCompare(b.name)),
-      })).filter((c) => c.items.length > 0 || !q),
+      })),
     [s.items, q],
   )
+  const filled = shelves.filter((c) => c.items.length > 0)
+  const empty = q ? [] : shelves.filter((c) => c.items.length === 0)
 
   const total = s.items.filter((i) => i.owners.length).length
   const mine = s.items.filter((i) => i.owners.includes(me.id)).length
@@ -71,50 +73,50 @@ export default function Cupboard() {
         </div>
       </div>
 
-      <div className="cabinet">
-        <div className="cabinet-top" aria-hidden />
-        {shelves.map((shelf) => (
-          <section className="shelf" key={shelf.id} aria-label={shelf.label}>
-            <div className="plaque">
-              <ShelfIcon id={shelf.id} /> {shelf.label}
-            </div>
-            <div className="shelf-row">
-              {shelf.items.map((item) => (
-                <ItemJar
-                  key={item.id}
-                  item={item}
-                  users={s.users}
-                  dimmed={filter !== 'all' && !item.owners.includes(filter)}
-                  onClick={() => setOpenItem(item.id)}
-                />
-              ))}
-              {!q && (
-                <button className="jar jar-add" onClick={() => setAdding(shelf.id)} aria-label={`Add to ${shelf.label}`}>
-                  <span className="jar-ring">
-                    <span className="jar-face">
-                      <UI.add size={26} strokeWidth={1.5} />
-                    </span>
-                  </span>
-                  <span className="jar-name">Add</span>
-                </button>
-              )}
-            </div>
-            <div className="plank" aria-hidden />
-          </section>
-        ))}
-        {q && shelves.length === 0 && (
-          <div className="empty-search">
-            <p>No “{query}” in the cupboard.</p>
-            <button className="btn btn-primary" onClick={() => setAdding(null)}>
-              Add “{query}”
-            </button>
-          </div>
-        )}
-        <div className="cabinet-base" aria-hidden />
-      </div>
+      {filled.map((shelf) => (
+        <Shelf
+          key={shelf.id}
+          id={shelf.id}
+          label={shelf.label}
+          count={shelf.items.filter((i) => i.owners.length).length}
+          onAdd={q ? undefined : () => setAdding(shelf.id)}
+        >
+          {shelf.items.map((item) => (
+            <ItemCard
+              key={item.id}
+              item={item}
+              users={s.users}
+              dimmed={filter !== 'all' && !item.owners.includes(filter)}
+              onClick={() => setOpenItem(item.id)}
+            />
+          ))}
+        </Shelf>
+      ))}
 
-      <button className="fab" onClick={() => setAdding(null)} aria-label="Add item">
-        <UI.add size={30} strokeWidth={2} />
+      {q && filled.length === 0 && (
+        <div className="empty-search">
+          <p>No “{query}” in the cupboard.</p>
+          <button className="btn btn-primary" onClick={() => setAdding(null)}>
+            <UI.add size={ICON_SIZES.button} /> Add “{query}”
+          </button>
+        </div>
+      )}
+
+      {empty.length > 0 && (
+        <section className="empty-shelves" aria-label="Empty shelves">
+          <h3 className="section-title">{filled.length ? 'Empty shelves' : 'Start stocking a shelf'}</h3>
+          <div className="cat-grid">
+            {empty.map((c) => (
+              <button key={c.id} className="cat-chip" onClick={() => setAdding(c.id)}>
+                <ShelfIcon id={c.id} /> {c.label}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <button className="add-pill" onClick={() => setAdding(null)}>
+        <UI.add size={ICON_SIZES.button} /> Add item
       </button>
 
       <ItemSheet itemId={openItem} onClose={() => setOpenItem(null)} me={me} />
@@ -170,7 +172,9 @@ function ItemSheet({ itemId, onClose, me }: { itemId: string | null; onClose: ()
       ) : (
         <div className="item-detail">
           <div className="item-hero">
-            <ItemJar item={item} users={s.users} onClick={() => setEditing(true)} />
+            <div className="shelf" style={shelfVar(item.category)}>
+              <ItemCard item={item} users={s.users} onClick={() => setEditing(true)} />
+            </div>
             <div>
               <h2>{item.name}</h2>
               <p className="muted">
@@ -421,4 +425,58 @@ export function ItemForm({
 function ShelfIcon({ id }: { id: CategoryId }) {
   const Icon = CATEGORY_ICONS[id]
   return <Icon size={ICON_SIZES.shelf} strokeWidth={2.2} aria-hidden />
+}
+
+const shelfVar = (id: CategoryId) => ({ '--shelf': `var(--shelf-${id})`, margin: 0 }) as React.CSSProperties
+
+/** One shelf: heading with count and arrows, a scrolling row of cards, and the glass shelf in front. */
+function Shelf({
+  id,
+  label,
+  count,
+  onAdd,
+  children,
+}: {
+  id: CategoryId
+  label: string
+  count: number
+  onAdd?: () => void
+  children: React.ReactNode
+}) {
+  const row = useRef<HTMLDivElement>(null)
+  const scroll = (dir: 1 | -1) => row.current?.scrollBy({ left: dir * row.current.clientWidth * 0.8, behavior: 'smooth' })
+  return (
+    <section className="shelf" style={{ '--shelf': `var(--shelf-${id})` } as React.CSSProperties} aria-label={label}>
+      <div className="shelf-head">
+        <span className="shelf-title">
+          <ShelfIcon id={id} /> {label}
+        </span>
+        <span className="shelf-meta">
+          {count} item{count === 1 ? '' : 's'}
+        </span>
+        <span className="shelf-nav">
+          <button onClick={() => scroll(-1)} aria-label={`Scroll ${label} left`}>
+            <UI.chevronLeft size={16} />
+          </button>
+          <button onClick={() => scroll(1)} aria-label={`Scroll ${label} right`}>
+            <UI.chevron size={16} />
+          </button>
+        </span>
+      </div>
+      <div className="shelf-stage">
+        <div className="shelf-row" ref={row}>
+          {children}
+          {onAdd && (
+            <button className="item item-add" onClick={onAdd} aria-label={`Add to ${label}`}>
+              <span className="item-face">
+                <UI.add size={ICON_SIZES.card - 4} strokeWidth={1.5} />
+                <span className="item-name">Add</span>
+              </span>
+            </button>
+          )}
+        </div>
+        <div className="shelf-glass" aria-hidden />
+      </div>
+    </section>
+  )
 }

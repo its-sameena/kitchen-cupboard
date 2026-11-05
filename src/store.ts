@@ -13,6 +13,7 @@
 import { useSyncExternalStore } from 'react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { isConfigured, sb } from './supabase'
+import { normalizeAvatar, type AvatarConfig } from './avatar'
 import type { CategoryId, FeedbackKind, GroceryEntry, Item, KitchenEvent, KitchenState, User } from './types'
 
 export type Status = 'unconfigured' | 'loading' | 'offline' | 'no_kitchen' | 'pick_profile' | 'ready'
@@ -25,6 +26,8 @@ interface AppState {
   profileId: string | null
   kitchen: KitchenState | null
   error: string | null
+  /** Set right after creating a profile, so the app can offer the avatar creator once. */
+  avatarPrompt: boolean
 }
 
 const PROFILE_KEY = 'kitchen-cupboard:profile'
@@ -55,6 +58,7 @@ let app: AppState = {
   profileId: null,
   kitchen: null,
   error: null,
+  avatarPrompt: false,
 }
 
 const listeners = new Set<() => void>()
@@ -123,6 +127,7 @@ async function fetchKitchen(): Promise<KitchenState | null> {
       id: m.id,
       name: m.name,
       color: m.color,
+      avatar: normalizeAvatar(m.avatar) ?? undefined,
       seenAt: ms(m.seen_at),
       createdAt: ms(m.joined_at),
     })),
@@ -286,8 +291,12 @@ if (isConfigured && typeof window !== 'undefined') {
 // ───────────────────────── helpers ─────────────────────────
 
 function messageOf(e: unknown) {
-  if (e && typeof e === 'object' && 'message' in e) return String((e as { message: unknown }).message)
-  return String(e)
+  const msg = e && typeof e === 'object' && 'message' in e ? String((e as { message: unknown }).message) : String(e)
+  if (msg.includes('members_unique_color')) return 'A housemate already uses that colour. Pick another one.'
+  if (msg.includes('members_unique_name')) return 'A housemate already has that name.'
+  if (/schema cache|does not exist|PGRST20[24]/i.test(msg))
+    return 'The database is missing an update. Run the newest files in supabase/migrations in the Supabase SQL Editor (npm run db:status shows which).'
+  return msg
 }
 
 export function activeRun(s: KitchenState) {
@@ -359,7 +368,21 @@ export async function createProfile(name: string, color: string) {
   const res = await rpc<{ member_id: string; event_id: string }>('create_profile', { p_name: name, p_color: color })
   await refresh()
   selectProfile(res.member_id)
+  set({ avatarPrompt: true })
   pushEvent(res.event_id)
+}
+
+export function dismissAvatarPrompt() {
+  set({ avatarPrompt: false })
+}
+
+/** Save (or with null, remove) the chosen profile's avatar. */
+export function setAvatar(avatar: AvatarConfig | null) {
+  const id = app.profileId
+  if (!id || !app.kitchen) return
+  // Optimistic so the new avatar shows immediately.
+  set({ kitchen: { ...app.kitchen, users: app.kitchen.users.map((u) => (u.id === id ? { ...u, avatar: avatar ?? undefined } : u)) } })
+  act(sb.from('members').update({ avatar }).eq('id', id).then(check))
 }
 
 export function updateProfile(patch: { name?: string; color?: string }) {

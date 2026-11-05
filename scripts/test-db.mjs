@@ -55,6 +55,9 @@ const A = (await profile(P1, 'Alex', '#e4572e')).member_id
 const S = (await profile(P1, 'Sam', '#2e86de')).member_id
 const J = (await profile(P2, 'Jordan', '#2fa84f')).member_id
 await fails(P2, `select create_profile('alex', '#123456')`, [], /already a profile/)
+// Colours are unique per kitchen (case-insensitive), on create and on later changes
+await fails(P2, `select create_profile('Morgan', '#E4572E')`, [], /Alex already uses that colour/)
+await fails(P2, `update members set color = '#2e86de' where id = $1`, [J], /members_unique_color/)
 assert.equal((await as(P2, `select * from members`)).length, 3)
 await one(OUT, `select create_kitchen('Other')`)
 const X = (await profile(OUT, 'Xavier', '#000000')).member_id
@@ -87,6 +90,17 @@ await fails(P1, `select _restock($1, 'x', 'x', 'other', null, $2)`, [k, A], /per
 await fails(P1, `update members set kitchen_id = gen_random_uuid()`, [], /permission/)
 await fails(P1, `update feedback set status = 'done'`, [], /permission/)
 await as(P1, `update members set color = '#9b59b6' where id = $1`, [A])
+await as(P1, `update members set color = '#e4572e' where id = $1`, [A]) // back to own colour is fine
+// Avatars: any phone in the kitchen can set/clear one; must be a small JSON object
+const av = { plant: 'cactus', pot: 'bowl', pattern: null, cheeks: 'blush', eyes: 'happy', mouth: 'grin', potColor: '#fca5a5', plantColor: '#22c55e', bloomColor: '#fcd34d' }
+await as(P2, `update members set avatar = $2 where id = $1`, [J, JSON.stringify(av)])
+assert.deepEqual((await one(P1, `select avatar from members where id = $1`, [J])).avatar, av)
+await fails(P2, `update members set avatar = '"cactus"' where id = $1`, [J], /check constraint/)
+await fails(P2, `update members set avatar = $2 where id = $1`, [J, JSON.stringify({ junk: 'x'.repeat(2000) })], /check constraint/)
+await as(OUT, `update members set avatar = null where id = $1`, [J]) // other kitchens can't touch it (RLS filters)
+assert.ok((await one(P1, `select avatar from members where id = $1`, [J])).avatar)
+await as(P2, `update members set avatar = null where id = $1`, [J])
+assert.equal((await one(P1, `select avatar from members where id = $1`, [J])).avatar, null)
 await as(OUT, `update members set name = 'Hacked' where id = $1`, [S]) // filtered out by RLS
 assert.equal((await one(P1, `select name from members where id = $1`, [S])).name, 'Sam')
 
@@ -171,6 +185,10 @@ await old.exec(`
     ('00000000-0000-4000-8000-0000000000aa', 'Chilli', '🌶️', 'spices'),
     ('00000000-0000-4000-8000-0000000000aa', 'Mystery', '🦄', 'other');
   insert into grocery (kitchen_id, name, emoji) values ('00000000-0000-4000-8000-0000000000aa', 'Soap', '🧻');
+  insert into members (kitchen_id, name, color, joined_at) values
+    ('00000000-0000-4000-8000-0000000000aa', 'First', '#e4572e', now() - interval '2 days'),
+    ('00000000-0000-4000-8000-0000000000aa', 'Second', '#E4572E', now() - interval '1 day'),
+    ('00000000-0000-4000-8000-0000000000aa', 'Third', '#2e86de', now());
   insert into events (kitchen_id, type, actor_id, title, body)
     values ('00000000-0000-4000-8000-0000000000aa', 'run_started', gen_random_uuid(), '🛒 Sam is going grocery shopping', 'Say hi 👋');
 `)
@@ -178,6 +196,10 @@ await migrate(old, 1)
 const icons = Object.fromEntries((await old.query(`select name, emoji from items`)).rows.map((r) => [r.name, r.emoji]))
 assert.deepEqual(icons, { Salt: 'flask-round', Chilli: 'flame', Mystery: 'package' })
 assert.equal((await old.query(`select emoji from grocery`)).rows[0].emoji, 'spray-can')
+const cols = Object.fromEntries((await old.query(`select name, color from members`)).rows.map((r) => [r.name, r.color]))
+assert.equal(cols.First, '#e4572e', 'earliest profile keeps its colour')
+assert.notEqual(cols.Second.toLowerCase(), '#e4572e', 'duplicate gets a new colour')
+assert.equal(new Set(Object.values(cols).map((c) => c.toLowerCase())).size, 3)
 assert.deepEqual((await old.query(`select title, body from events`)).rows[0], { title: 'Sam is going grocery shopping', body: 'Say hi' })
 
 console.log('All database checks passed ✔')

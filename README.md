@@ -1,6 +1,6 @@
 # Kitchen Cupboard
 
-A phone-first PWA for a shared kitchen: see who has what on a wooden "shared cupboard", ask whoever's at the shops to pick things up, and keep a shared grocery list. Backed by Supabase (anonymous device auth, Postgres, realtime) with Web Push notifications. No passwords: each phone joins the kitchen once, then you pick your profile.
+A phone-first PWA for a shared kitchen: see who has what on glass shelves in a shared cupboard, ask whoever's at the shops to pick things up, and keep a shared grocery list. Backed by Supabase (anonymous device auth, Postgres, realtime) with Web Push notifications. No passwords: each phone joins the kitchen once, then you pick your profile.
 
 ## One-time setup (≈10 minutes)
 
@@ -84,25 +84,40 @@ Or just describe what you want to Claude Code, e.g. *"make the buttons navy and 
 
 | What you want to change | Where | How |
 | --- | --- | --- |
-| **Colour scheme** | `src/styles.css`, the `THEME` block at the top | Every colour is a variable, e.g. `--primary` (main buttons), `--run` (grocery-run orange), `--cream` (page background), `--paper` (cards), `--ink` (text), the `--wood-*` shades (top bar and cupboard), `--brass` (shelf labels), `--jar-icon` (icons inside jars). Change a value and the whole app follows. |
-| **Fonts** | `index.html` + the `THEME` block | Pick a font on [Google Fonts](https://fonts.google.com), paste its `<link>` where `index.html` shows an example, then set `--font-body` (and optionally `--font-heading`), e.g. `--font-body: 'Nunito', sans-serif;`. |
+| **Colour scheme** | `src/styles.css`, the `THEME` block at the top | Every colour is a variable: `--bg` (page background), `--surface` (cards, sheets, tab bar), `--surface-2` (chips, inputs), `--ink` (text), `--muted`, `--accent` (black buttons and the *Add item* pill), `--run` (grocery-run orange), `--danger`, `--success`. Change a value and the whole app follows. |
+| **Fonts** | `index.html` + the `THEME` block | The app uses **Inter** for text and **Instrument Serif** for the big page titles. To change them, pick fonts on [Google Fonts](https://fonts.google.com), replace the `<link>` in `index.html`, then set `--font-body` and `--font-display`, e.g. `--font-display: 'Playfair Display', serif;`. |
 | **Order of pages (tabs)** | `src/config.ts` → `TABS` | The tab bar shows them left to right in array order: move a line to move a tab. `label` is the tab text, `title` the subtitle in the top bar. `DEFAULT_TAB` is the page the app opens on. |
 | **Interface icons** (tabs, buttons, top bar, empty states) | `src/icons.tsx` → `UI` | Find an icon on [lucide.dev/icons](https://lucide.dev/icons), add its name (PascalCase, e.g. `ShoppingBasket`) to the `import` list, and point the entry at it, e.g. `cupboard: Refrigerator`. |
 | **Shelf icons** | `src/icons.tsx` → `CATEGORY_ICONS` | Same as above, one per shelf. |
 | **Item icons** (the ones you pick when adding food) | `src/icons.tsx` → `ITEM_ICONS` | Add entries to offer more icons, or change the icon/label of one. Keep existing keys (e.g. `'milk'`): they're saved in the database. |
 | **Icons guessed from item names** | `src/data.ts` → `SUGGESTIONS` | e.g. `[['oat milk'], 'milk', 'dairy']` means "oat milk" gets the milk icon on the Dairy shelf. |
-| **Icon sizes** | `src/config.ts` → `ICON_SIZES` | Sizes in pixels for jars, shelf labels, lists, tabs and buttons. |
+| **Icon sizes** | `src/config.ts` → `ICON_SIZES` | Sizes in pixels for item cards, shelf headings, lists, tabs and buttons. |
 | **Shelf order and names** | `src/data.ts` → `CATEGORIES` | Top-to-bottom order of the cupboard; change `label` to rename a shelf. Adding a brand-new shelf also needs a database change, so ask Claude. |
-| **Profile colours** | `src/data.ts` → `USER_COLORS` | The colours housemates can pick for their highlight ring. |
-| **Roundness, shadows** | `THEME` block | `--radius` (card corners) and `--shadow`. |
+| **Shelf glass colours** | `THEME` block → `--shelf-spices`, `--shelf-dairy`, … | One colour per shelf. `--shelf-opacity` controls how see-through the glass is (100% = solid). The item cards on a shelf are tinted with the same colour. |
+| **Profile colours** | `src/data.ts` → `PROFILE_PALETTE`, `USER_COLORS` | The pop-up colour grid is generated from `PALETTE_HUES` (one per column) and `PALETTE_LIGHTNESS` (one per row). `USER_COLORS` are the colours a new profile is offered first. Two housemates can never share a colour (the database enforces it). |
+| **Avatars** | `src/avatar.ts`, `src/components/AvatarCreator.tsx` | Avatars use DiceBear's free (CC0) **sprouts** style: potted plants with faces. The parts and colours on offer are read from the style itself; the tabs and labels are in `AvatarCreator.tsx`. The avatar's background is always the profile's highlight colour. |
+| **Shops for grocery runs** | `src/config.ts` → `STORES` | Each shop's name, button border colour and optional logo. Add, remove or reorder entries freely. |
+| **Roundness, shadows, card size** | `THEME` block | `--radius` (cards and sheets), `--radius-sm` (item cards, inputs), `--shadow`, and `--card-w` / `--card-h` (size of the item cards on the shelves). |
 | **App name, home-screen icon, status-bar colour** | `vite.config.ts` (`manifest`), `index.html` (`<title>`, `theme-color`), `public/favicon.svg` | After editing `favicon.svg`, run `npm run icons` to regenerate the PNG app icons. |
 | **Layout of a screen** | `src/components/` | `Cupboard.tsx`, `Groceries.tsx`, `House.tsx`, `Welcome.tsx` (setup + profile picker), `Feedback.tsx`; the tab bar and top bar are in `src/App.tsx`. Styles for each are in labelled sections of `src/styles.css`. |
 
 After changing the look, phones get it on their next launch once the app is redeployed.
 
+### Shop logos
+
+The grocery-run buttons show the shop names in their brand colours. To show logos instead:
+
+1. Get each logo as an image, ideally a transparent `.svg` or `.png` about 300px wide. Good sources are the shop's own website or press/media page, or Wikimedia Commons (search e.g. "Asda logo svg"). The logos are the shops' trademarks; using them in a private app for your household is fine, but don't publish the app with them.
+2. Save them in `public/stores/` as `asda.svg`, `lidl.svg` and `sainsburys.svg` (any name works).
+3. In `src/config.ts`, add a `logo` to each shop in `STORES`:
+   ```ts
+   { name: 'ASDA', label: 'ASDA', color: '#78be20', logo: '/stores/asda.svg' },
+   ```
+4. Reload. If a logo file is missing or broken, the button falls back to the shop name.
+
 ## How it works
 
-- **Cupboard**: one shelf per category. Each item's ring is coloured by its owners (split when shared). A badge `xN` shows how many housemates have one.
+- **Cupboard**: one glass shelf per category. Each item card is framed in its owners' colours (split into bands when shared). A badge `xN` shows how many housemates have one.
 - **I've run out** removes only *your* copy. When the last copy goes, the item turns grey and joins the grocery list.
 - **Grocery run**: start a run → everyone is alerted → they **Ask** for list items or type new ones → the shopper ticks items off → **Finish run** restocks the cupboard. Requested items go to whoever asked; the rest go to the shopper.
 - **Live sync**: every phone gets changes over Supabase Realtime. Each change is made by a Postgres function (`supabase/migrations/…sql`), so two people tapping at once can't corrupt the counts. Row Level Security limits each connected phone to its own kitchen.
@@ -111,6 +126,7 @@ After changing the look, phones get it on their next launch once the app is rede
 ## Development
 
 ```bash
+npm run db:status # which migrations your live Supabase database has
 npm run test:db   # runs the migrations in an in-memory Postgres (PGlite) and checks flows + RLS
 npm run build
 ```

@@ -14,7 +14,7 @@ import {
   useMe,
 } from '../store'
 import type { GroceryEntry, User } from '../types'
-import { ICON_SIZES } from '../config'
+import { ICON_SIZES, STORES, type StoreConfig } from '../config'
 import { ItemIcon, UI } from '../icons'
 import { Avatar, Sheet, timeAgo } from './ui'
 
@@ -237,51 +237,87 @@ function QuickAdd({ placeholder, buttonLabel }: { placeholder: string; buttonLab
 }
 
 function StartRunSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [store, setStore] = useState('')
   return (
-    <Sheet open={open} onClose={onClose} title="Start a grocery run">
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          startRun(store)
-          setStore('')
-          onClose()
-        }}
-      >
-        <p className="muted">Everyone in the kitchen gets a notification and can send you requests.</p>
-        <label className="field">
-          <span>Where are you going? (optional)</span>
-          <input value={store} onChange={(e) => setStore(e.target.value)} placeholder="e.g. Tesco, Lidl, the market" maxLength={30} />
-        </label>
-        <button className="btn btn-run btn-block">
-          <UI.groceryRun size={ICON_SIZES.button} /> Notify everyone & start
-        </button>
-      </form>
+    <Sheet open={open} onClose={onClose} title="Where are you going?">
+      <p className="muted">Tap a shop to start. Everyone in the kitchen gets a notification and can send you requests.</p>
+      <div className="store-grid">
+        {STORES.map((st) => (
+          <StoreButton
+            key={st.label}
+            store={st}
+            onClick={() => {
+              startRun(st.name)
+              onClose()
+            }}
+          />
+        ))}
+      </div>
     </Sheet>
   )
 }
 
+function StoreButton({ store, onClick }: { store: StoreConfig; onClick: () => void }) {
+  const [logoFailed, setLogoFailed] = useState(false)
+  const showLogo = store.logo && !logoFailed
+  return (
+    <button
+      className="store-btn"
+      style={{ '--store': store.color } as React.CSSProperties}
+      onClick={onClick}
+      aria-label={store.name ? `Going to ${store.label}` : 'Going somewhere else'}
+    >
+      {showLogo ? (
+        <img src={store.logo} alt={store.label} onError={() => setLogoFailed(true)} />
+      ) : (
+        <span>{store.label}</span>
+      )}
+    </button>
+  )
+}
+
+/** Grey link that opens the last few grocery runs in a sheet. */
 function RecentRuns() {
   const s = useKitchen()
-  const past = s.runs.filter((r) => r.endedAt).slice(-3).reverse()
+  const [open, setOpen] = useState(false)
+  const past = s.runs.filter((r) => r.endedAt).reverse()
   if (!past.length) return null
   return (
     <>
-      <h3 className="section-title">Recent runs</h3>
-      <ul className="recent-runs">
-        {past.map((r) => {
-          const u = s.users.find((x) => x.id === r.shopperId)
-          return (
-            <li key={r.id}>
-              <Avatar user={u} size={24} />
-              <span>
-                {u?.name ?? 'Someone'} {r.store ? `· ${r.store}` : ''}
-              </span>
-              <span className="muted">{timeAgo(r.endedAt!)}</span>
-            </li>
-          )
-        })}
-      </ul>
+      <button className="recent-link" onClick={() => setOpen(true)}>
+        Show recent runs
+      </button>
+      <Sheet open={open} onClose={() => setOpen(false)} title="Recent runs">
+        <ul className="recent-runs">
+          {past.map((r) => {
+            const u = s.users.find((x) => x.id === r.shopperId)
+            const store = STORES.find((st) => st.name && st.name === r.store)
+            const mins = Math.max(1, Math.round((r.endedAt! - r.startedAt) / 60000))
+            return (
+              <li key={r.id}>
+                <Avatar user={u} size={34} />
+                <div>
+                  <strong>
+                    {u?.name ?? 'Someone'}
+                    {r.store ? (
+                      <>
+                        {' at '}
+                        <span className="store-tag" style={{ '--store': store?.color ?? 'var(--muted)' } as React.CSSProperties}>
+                          {r.store}
+                        </span>
+                      </>
+                    ) : null}
+                  </strong>
+                  <span className="muted small">
+                    {new Date(r.startedAt).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })} ·{' '}
+                    {mins < 60 ? `${mins} min` : `${Math.round(mins / 6) / 10} h`}
+                  </span>
+                </div>
+                <span className="muted small">{timeAgo(r.endedAt!)}</span>
+              </li>
+            )
+          })}
+        </ul>
+      </Sheet>
     </>
   )
 }

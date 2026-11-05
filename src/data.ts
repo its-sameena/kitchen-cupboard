@@ -25,7 +25,7 @@ export const CATEGORIES: Category[] = [
 export const categoryById = (id: CategoryId) =>
   CATEGORIES.find((c) => c.id === id) ?? CATEGORIES[CATEGORIES.length - 1]
 
-/** Highlight colours housemates can pick for their profile. */
+/** Colours offered first to a new profile (the first one nobody uses is pre-selected). */
 export const USER_COLORS = [
   '#e4572e', // tomato
   '#2e86de', // blue
@@ -103,3 +103,41 @@ export function suggestFor(name: string): { icon: string; category: CategoryId }
   }
   return null
 }
+
+// ───────────────────────── colour picker palette ─────────────────────────
+
+function hsl(h: number, s: number, l: number) {
+  const a = (s / 100) * Math.min(l / 100, 1 - l / 100)
+  const f = (n: number) => {
+    const k = (n + h / 30) % 12
+    const c = l / 100 - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))
+    return Math.round(c * 255).toString(16).padStart(2, '0')
+  }
+  return `#${f(0)}${f(8)}${f(4)}`
+}
+
+/** Hue of each column in the colour picker, left to right. */
+const PALETTE_HUES = [198, 220, 245, 272, 300, 340, 6, 22, 36, 50, 66, 100]
+/** Lightness of each row, top (dark) to bottom (light). */
+const PALETTE_LIGHTNESS = [20, 28, 36, 44, 52, 62, 72, 82, 91]
+
+/**
+ * The pop-up colour grid (like the iOS colour picker): a greyscale row,
+ * then one column per hue from dark to light. Each row has 12 colours.
+ */
+export const PROFILE_PALETTE: string[][] = [
+  Array.from({ length: 12 }, (_, i) => hsl(0, 0, Math.round(100 - (i * 100) / 11))),
+  ...PALETTE_LIGHTNESS.map((l) => PALETTE_HUES.map((h) => hsl(h, l > 80 ? 70 : 78, l))),
+]
+
+/** Black or white text, whichever reads better on `hex`. */
+export function textOn(hex: string) {
+  const n = parseInt(hex.slice(1), 16)
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
+    const c = v / 255
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.45 ? '#141414' : '#ffffff'
+}
+
+export const sameColor = (a: string, b: string) => a.toLowerCase() === b.toLowerCase()

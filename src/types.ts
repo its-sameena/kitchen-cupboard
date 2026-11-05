@@ -13,10 +13,14 @@ export type CategoryId =
   | 'produce'
   | 'other'
 
+import type { AvatarConfig } from './avatar'
+
 export interface User {
   id: string
   name: string
   color: string
+  /** DiceBear sprouts avatar; undefined = show initials. */
+  avatar?: AvatarConfig
   /** Timestamp of the newest event this user has seen. */
   seenAt: number
   createdAt: number

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Cupboard from './components/Cupboard'
 import Groceries from './components/Groceries'
 import House from './components/House'
+import { AvatarCreator } from './components/AvatarCreator'
 import { FeedbackSheet } from './components/Feedback'
 import { KitchenSetup, Loading, Offline, ProfilePicker, SetupNeeded } from './components/Welcome'
 import { Avatar, Sheet, timeAgo } from './components/ui'
@@ -9,7 +10,7 @@ import type { LucideIcon } from 'lucide-react'
 import { DEFAULT_TAB, ICON_SIZES, TABS, type TabId } from './config'
 import { EVENT_ICONS, UI } from './icons'
 import { subscribePush } from './notify'
-import { activeRun, clearError, eventsFor, markSeen, onNewEvents, useApp, useKitchen, useMe } from './store'
+import { activeRun, clearError, dismissAvatarPrompt, setAvatar, eventsFor, markSeen, onNewEvents, useApp, useKitchen, useMe } from './store'
 import type { KitchenEvent } from './types'
 
 type Tab = TabId
@@ -52,6 +53,8 @@ function Main() {
   const [tab, setTab] = useState<Tab>(initialTab)
   const [inboxOpen, setInboxOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const { avatarPrompt } = useApp()
+  const [creatorOpen, setCreatorOpen] = useState(false)
   const [toasts, setToasts] = useState<KitchenEvent[]>([])
   const run = activeRun(s)
   const shopper = run && s.users.find((u) => u.id === run.shopperId)
@@ -93,9 +96,9 @@ function Main() {
   return (
     <div className="app">
       <header className="topbar">
-        <div className="topbar-title">
-          <h1>{s.kitchenName}</h1>
-          <span>{TABS.find((t) => t.id === tab)?.title}</span>
+        <div className="topbar-brand">
+          <img src="/favicon.svg" alt="" />
+          <span>Hi, {me.name}</span>
         </div>
         <button className="icon-btn" onClick={() => setFeedbackOpen(true)} aria-label="Send feedback">
           <UI.feedback size={ICON_SIZES.button + 2} />
@@ -114,6 +117,11 @@ function Main() {
           <Avatar user={me} size={34} />
         </button>
       </header>
+
+      <div className="page-title">
+        <span className="kicker">{s.kitchenName}</span>
+        <h1>{TABS.find((t) => t.id === tab)?.title}</h1>
+      </div>
 
       {run && tab !== 'grocery' && (
         <button className="run-banner" onClick={() => setTab('grocery')}>
@@ -168,6 +176,33 @@ function Main() {
       </div>
 
       <FeedbackSheet open={feedbackOpen} onClose={() => setFeedbackOpen(false)} screen={tab} />
+
+      {/* Asked once, right after a profile is created. "Not now" keeps the initials. */}
+      <Sheet open={avatarPrompt && !creatorOpen} onClose={dismissAvatarPrompt} title="Add an avatar?">
+        <div className="avatar-prompt">
+          <Avatar user={me} size={72} />
+          <p className="muted">
+            Make a little plant buddy to show instead of your initials. You can change or remove it any time in House.
+          </p>
+        </div>
+        <div className="actions">
+          <button className="btn btn-primary btn-block" onClick={() => setCreatorOpen(true)}>
+            <UI.avatar size={ICON_SIZES.button} /> Create my avatar
+          </button>
+          <button className="btn btn-ghost btn-block" onClick={dismissAvatarPrompt}>
+            Not now, keep my initials
+          </button>
+        </div>
+      </Sheet>
+      <AvatarCreator
+        open={creatorOpen}
+        background={me.color}
+        onClose={() => {
+          setCreatorOpen(false)
+          dismissAvatarPrompt()
+        }}
+        onSave={setAvatar}
+      />
 
       <Sheet
         open={inboxOpen}

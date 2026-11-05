@@ -1,5 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { ICON_SIZES } from '../config'
+import { avatarUri } from '../avatar'
+import { textOn } from '../data'
 import { ItemIcon, UI } from '../icons'
 import type { Item, User } from '../types'
 
@@ -51,10 +53,23 @@ export function Sheet({
 }
 
 export function Avatar({ user, size = 32, ring }: { user?: User; size?: number; ring?: boolean }) {
+  if (user?.avatar) {
+    return (
+      <img
+        className={'avatar avatar-img' + (ring ? ' avatar-ring' : '')}
+        src={avatarUri(user.avatar, user.color)}
+        width={size}
+        height={size}
+        alt={user.name}
+        title={user.name}
+        draggable={false}
+      />
+    )
+  }
   return (
     <span
       className={'avatar' + (ring ? ' avatar-ring' : '')}
-      style={{ width: size, height: size, fontSize: size * 0.45, background: user?.color ?? '#999' }}
+      style={{ width: size, height: size, fontSize: size * 0.45, background: user?.color ?? '#999', color: textOn(user?.color ?? '#999999') }}
       title={user?.name}
     >
       {user?.name.slice(0, 1).toUpperCase() ?? '?'}
@@ -72,16 +87,17 @@ export function AvatarStack({ users, size = 22 }: { users: User[]; size?: number
   )
 }
 
-/** Conic-gradient ring split evenly between the owners' colours. */
+/** Frame colour for an item: one owner's colour, or diagonal bands for several owners. */
 export function ownerRing(owners: User[]) {
   if (owners.length === 0) return undefined
   if (owners.length === 1) return owners[0].color
-  const step = 360 / owners.length
-  const stops = owners.map((u, i) => `${u.color} ${i * step}deg ${(i + 1) * step}deg`).join(', ')
-  return `conic-gradient(${stops})`
+  const step = 100 / owners.length
+  const stops = owners.map((u, i) => `${u.color} ${i * step}% ${(i + 1) * step}%`).join(', ')
+  return `linear-gradient(135deg, ${stops})`
 }
 
-export function ItemJar({
+/** An item standing on a shelf, like a book cover. Must sit inside an element that sets --shelf. */
+export function ItemCard({
   item,
   users,
   dimmed,
@@ -96,18 +112,17 @@ export function ItemJar({
   const out = owners.length === 0
   return (
     <button
-      className={'jar' + (out ? ' jar-out' : '') + (dimmed ? ' jar-dim' : '')}
+      className={'item' + (out ? ' item-out' : '') + (dimmed ? ' item-dim' : '')}
+      style={out ? undefined : ({ '--ring': ownerRing(owners) } as React.CSSProperties)}
       onClick={onClick}
       aria-label={`${item.name}, ${out ? 'out of stock' : `${owners.length} in kitchen, owned by ${owners.map((o) => o.name).join(', ')}`}`}
     >
-      <span className="jar-ring" style={{ background: ownerRing(owners) }}>
-        <span className="jar-face">
-          <ItemIcon name={item.icon} className="jar-icon" size={ICON_SIZES.jar} strokeWidth={1.6} />
-        </span>
-        {owners.length > 1 && <span className="jar-count">x{owners.length}</span>}
-        {out && <span className="jar-out-tag">out</span>}
+      <span className="item-face">
+        <ItemIcon name={item.icon} className="item-icon" size={ICON_SIZES.card} strokeWidth={1.5} />
+        <span className="item-name">{item.name}</span>
       </span>
-      <span className="jar-name">{item.name}</span>
+      {owners.length > 1 && <span className="item-count">x{owners.length}</span>}
+      {out && <span className="item-out-tag">Out</span>}
     </button>
   )
 }

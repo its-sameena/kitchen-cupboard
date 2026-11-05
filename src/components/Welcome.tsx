@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react'
-import { USER_COLORS } from '../data'
+import { PROFILE_PALETTE, USER_COLORS, sameColor, textOn } from '../data'
+import { ColorPicker, type TakenColor } from './ColorPicker'
 import { boot, createKitchen, createProfile, joinKitchen, selectProfile, useApp, useKitchen } from '../store'
+import { avatarUri } from '../avatar'
 import { UI } from '../icons'
 import { Avatar, Sheet } from './ui'
 
@@ -132,8 +134,12 @@ export function ProfilePicker() {
           const count = k.items.filter((i) => i.owners.includes(u.id)).length
           return (
             <button key={u.id} className="picker-tile" onClick={() => selectProfile(u.id)}>
-              <span className="picker-face" style={{ background: u.color }}>
-                {u.name.slice(0, 1).toUpperCase()}
+              <span className="picker-face" style={{ background: u.color, color: textOn(u.color) }}>
+                {u.avatar ? (
+                  <img className="picker-avatar" src={avatarUri(u.avatar, u.color)} alt="" draggable={false} />
+                ) : (
+                  u.name.slice(0, 1).toUpperCase()
+                )}
               </span>
               <strong>{u.name}</strong>
               <small>{count} item{count === 1 ? '' : 's'}</small>
@@ -151,15 +157,18 @@ export function ProfilePicker() {
       <p className="picker-note">This phone will remember who you are.</p>
 
       <Sheet open={adding} onClose={() => setAdding(false)} title="New profile">
-        <NewProfileForm taken={k.users.map((u) => u.color)} onDone={() => setAdding(false)} />
+        <NewProfileForm taken={k.users.map((u) => ({ color: u.color, name: u.name }))} onDone={() => setAdding(false)} />
       </Sheet>
     </div>
   )
 }
 
-function NewProfileForm({ taken, onDone }: { taken: string[]; onDone: () => void }) {
+function NewProfileForm({ taken, onDone }: { taken: TakenColor[]; onDone: () => void }) {
   const [name, setName] = useState('')
-  const [color, setColor] = useState(USER_COLORS.find((c) => !taken.includes(c)) ?? USER_COLORS[0])
+  const free = (c: string) => !taken.some((t) => sameColor(t.color, c))
+  const [color, setColor] = useState(
+    () => USER_COLORS.find(free) ?? PROFILE_PALETTE.slice(1).flat().find(free) ?? USER_COLORS[0],
+  )
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   return (
@@ -187,20 +196,7 @@ function NewProfileForm({ taken, onDone }: { taken: string[]; onDone: () => void
         </label>
       </div>
       <div className="field">
-        <span>Highlight colour</span>
-        <div className="swatches">
-          {USER_COLORS.map((c) => (
-            <button
-              type="button"
-              key={c}
-              className={'swatch' + (c === color ? ' on' : '') + (taken.includes(c) ? ' taken' : '')}
-              style={{ background: c }}
-              onClick={() => setColor(c)}
-              aria-label={`Colour ${c}${taken.includes(c) ? ' (used by a housemate)' : ''}`}
-            />
-          ))}
-        </div>
-        {taken.includes(color) && <small className="warn">A housemate already uses this colour.</small>}
+        <ColorPicker value={color} onChange={setColor} taken={taken} />
       </div>
       {error && <p className="form-error">{error}</p>}
       <button className="btn btn-primary btn-block" disabled={!name.trim() || busy}>

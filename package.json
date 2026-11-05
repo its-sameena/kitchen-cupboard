@@ -1,7 +1,7 @@
 {
   "name": "kitchen-cupboard",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.6.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host",
@@ -9,16 +9,20 @@
     "preview": "vite preview --host",
     "icons": "pwa-assets-generator",
     "test:db": "node scripts/test-db.mjs",
-    "feedback": "node scripts/feedback.mjs"
+    "feedback": "node scripts/feedback.mjs",
+    "db:status": "node scripts/db-status.mjs"
   },
   "dependencies": {
+    "@dicebear/core": "^10.7.0",
+    "@dicebear/styles": "^10.6.0",
     "@supabase/supabase-js": "^2.119.0",
     "lucide-react": "^1.69.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "workbox-core": "^7.4.1",
     "workbox-precaching": "^7.4.1",
-    "workbox-routing": "^7.4.1"
+    "workbox-routing": "^7.4.1",
+    "workbox-strategies": "^7.4.1"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.15",
