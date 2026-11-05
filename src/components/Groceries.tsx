@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { motionMs } from '../motion'
 import { categoryById, suggestFor } from '../data'
 import {
   activeRun,
@@ -28,6 +29,10 @@ export default function Groceries() {
   const [confirmEnd, setConfirmEnd] = useState(false)
 
   const userById = (id?: string) => s.users.find((u) => u.id === id)
+  // Rows already here when the screen opened don't animate; ones that arrive later slide in.
+  const known = useRef<Set<string> | null>(null)
+  if (!known.current) known.current = new Set(s.grocery.map((g) => g.id))
+  const isNew = (id: string) => !known.current!.has(id)
   const requested = s.grocery.filter((g) => g.forUser)
   const rest = s.grocery.filter((g) => !g.forUser)
   const gotCount = s.grocery.filter((g) => g.gotBy).length
@@ -92,7 +97,7 @@ export default function Groceries() {
           <h3 className="section-title">Requested{run ? ` from ${iAmShopping ? 'you' : shopper?.name}` : ''}</h3>
           <ul className="g-list">
             {requested.map((g) => (
-              <GroceryRow key={g.id} g={g} me={me} run={!!run} iAmShopping={iAmShopping} shopperName={shopper?.name} userById={userById} />
+              <GroceryRow key={g.id} isNew={isNew(g.id)} g={g} me={me} run={!!run} iAmShopping={iAmShopping} shopperName={shopper?.name} userById={userById} />
             ))}
           </ul>
         </>
@@ -103,7 +108,7 @@ export default function Groceries() {
           <h3 className="section-title">Grocery list</h3>
           <ul className="g-list">
             {rest.map((g) => (
-              <GroceryRow key={g.id} g={g} me={me} run={!!run} iAmShopping={iAmShopping} shopperName={shopper?.name} userById={userById} />
+              <GroceryRow key={g.id} isNew={isNew(g.id)} g={g} me={me} run={!!run} iAmShopping={iAmShopping} shopperName={shopper?.name} userById={userById} />
             ))}
           </ul>
         </>
@@ -139,6 +144,7 @@ export default function Groceries() {
 
 function GroceryRow({
   g,
+  isNew,
   me,
   run,
   iAmShopping,
@@ -146,6 +152,7 @@ function GroceryRow({
   userById,
 }: {
   g: GroceryEntry
+  isNew: boolean
   me: User
   run: boolean
   iAmShopping: boolean
@@ -160,7 +167,7 @@ function GroceryRow({
 
   return (
     <li
-      className={'g-row' + (g.gotBy ? ' got' : '')}
+      className={'g-row' + (g.gotBy ? ' got' : '') + (isNew ? ' g-new' : '')}
       style={forUser ? ({ '--for': forUser.color } as React.CSSProperties) : undefined}
     >
       {iAmShopping ? (
@@ -169,7 +176,8 @@ function GroceryRow({
           onClick={() => toggleGot(g.id)}
           aria-label={g.gotBy ? `Un-tick ${g.name}` : `Tick ${g.name}`}
         >
-          {g.gotBy && <UI.check size={20} strokeWidth={3} />}
+          {/* Always rendered so the tick can draw itself in (see .check in styles.css) */}
+          <UI.check size={20} strokeWidth={3} />
         </button>
       ) : (
         <span className="g-icon">
@@ -237,17 +245,26 @@ function QuickAdd({ placeholder, buttonLabel }: { placeholder: string; buttonLab
 }
 
 function StartRunSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [picked, setPicked] = useState<string | null>(null)
   return (
     <Sheet open={open} onClose={onClose} title="Where are you going?">
       <p className="muted">Tap a shop to start. Everyone in the kitchen gets a notification and can send you requests.</p>
       <div className="store-grid">
-        {STORES.map((st) => (
+        {STORES.map((st, i) => (
           <StoreButton
             key={st.label}
+            index={i}
             store={st}
+            picked={picked === st.label}
             onClick={() => {
-              startRun(st.name)
-              onClose()
+              if (picked) return
+              // The button fills with its colour first, then the run starts and the sheet closes.
+              setPicked(st.label)
+              setTimeout(() => {
+                startRun(st.name)
+                onClose()
+                setPicked(null)
+              }, motionMs(300))
             }}
           />
         ))}
@@ -256,13 +273,23 @@ function StartRunSheet({ open, onClose }: { open: boolean; onClose: () => void }
   )
 }
 
-function StoreButton({ store, onClick }: { store: StoreConfig; onClick: () => void }) {
+function StoreButton({
+  store,
+  index,
+  picked,
+  onClick,
+}: {
+  store: StoreConfig
+  index: number
+  picked: boolean
+  onClick: () => void
+}) {
   const [logoFailed, setLogoFailed] = useState(false)
   const showLogo = store.logo && !logoFailed
   return (
     <button
-      className="store-btn"
-      style={{ '--store': store.color } as React.CSSProperties}
+      className={'store-btn' + (picked ? ' picked' : '')}
+      style={{ '--store': store.color, '--i': index } as React.CSSProperties}
       onClick={onClick}
       aria-label={store.name ? `Going to ${store.label}` : 'Going somewhere else'}
     >

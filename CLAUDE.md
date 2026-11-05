@@ -8,6 +8,7 @@ Phone-first PWA (Vite + React + TypeScript) on Supabase. See README.md for setup
 - `supabase/functions/notify`: Web Push for an event id; called by the client after an RPC returns one.
 - UI customisation points: `src/styles.css` THEME block (colours, fonts, per-shelf glass colours, card size), `src/config.ts` (tab order, icon sizes), `src/icons.tsx` (all icons, Lucide), `src/data.ts` (shelves, suggestions, profile colours). Don't use emoji in the UI. Item icons are stored as keys of `ITEM_ICONS` in the `emoji` DB column.
 - Avatars: optional DiceBear "sprouts" config in `members.avatar` (jsonb, NULL = initials), rendered client-side by `src/avatar.ts`; background = profile colour. Shown via the shared `Avatar` component.
+- Motion: all animation is CSS (THEME motion tokens + MOTION section in `src/styles.css`); durations are `calc(Xms * var(--motion))`. JS waits for animations with `motionMs()` from `src/motion.ts` so it respects `--motion` and reduced motion.
 - Trust model: housemates trust each other. Any connected phone can act as any profile in its kitchen. Don't add per-user auth unless asked.
 
 ## Checks

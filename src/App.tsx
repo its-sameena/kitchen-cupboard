@@ -9,6 +9,7 @@ import { Avatar, Sheet, timeAgo } from './components/ui'
 import type { LucideIcon } from 'lucide-react'
 import { DEFAULT_TAB, ICON_SIZES, TABS, type TabId } from './config'
 import { EVENT_ICONS, UI } from './icons'
+import { motionMs } from './motion'
 import { subscribePush } from './notify'
 import { activeRun, clearError, dismissAvatarPrompt, setAvatar, eventsFor, markSeen, onNewEvents, useApp, useKitchen, useMe } from './store'
 import type { KitchenEvent } from './types'
@@ -56,6 +57,7 @@ function Main() {
   const { avatarPrompt } = useApp()
   const [creatorOpen, setCreatorOpen] = useState(false)
   const [toasts, setToasts] = useState<KitchenEvent[]>([])
+  const [leaving, setLeaving] = useState<Set<string>>(new Set())
   const run = activeRun(s)
   const shopper = run && s.users.find((u) => u.id === run.shopperId)
 
@@ -63,7 +65,18 @@ function Main() {
   const unread = mine.filter((e) => e.at > me.seenAt).length
   const groceryBadge = run && run.shopperId === me.id ? s.grocery.filter((g) => g.forUser && !g.gotBy).length : s.grocery.length
 
-  const dismiss = useCallback((id: string) => setToasts((t) => t.filter((x) => x.id !== id)), [])
+  // Slide the toast up and away, then remove it.
+  const dismiss = useCallback((id: string) => {
+    setLeaving((l) => new Set(l).add(id))
+    setTimeout(() => {
+      setToasts((t) => t.filter((x) => x.id !== id))
+      setLeaving((l) => {
+        const n = new Set(l)
+        n.delete(id)
+        return n
+      })
+    }, motionMs(300))
+  }, [])
 
   // In-app toasts for things other housemates did (system notifications come via Web Push).
   useEffect(
@@ -118,7 +131,8 @@ function Main() {
         </button>
       </header>
 
-      <div className="page-title">
+      {/* Keyed by tab so the title animates in again on every tab change */}
+      <div className="page-title" key={tab}>
         <span className="kicker">{s.kitchenName}</span>
         <h1>{TABS.find((t) => t.id === tab)?.title}</h1>
       </div>
@@ -139,7 +153,18 @@ function Main() {
         {tab === 'house' && <House />}
       </main>
 
-      <nav className="tabbar" aria-label="Main" style={{ gridTemplateColumns: `repeat(${TABS.length}, 1fr)` }}>
+      <nav
+        className="tabbar"
+        aria-label="Main"
+        style={
+          {
+            gridTemplateColumns: `repeat(${TABS.length}, 1fr)`,
+            '--tabs': TABS.length,
+            '--tab-i': Math.max(0, TABS.findIndex((t) => t.id === tab)),
+          } as React.CSSProperties
+        }
+      >
+        <span className="tab-pill" aria-hidden />
         {TABS.map((t) => {
           const live = t.id === 'grocery' && !!run
           return (
@@ -160,7 +185,7 @@ function Main() {
         {toasts.map((t) => (
           <button
             key={t.id}
-            className="toast"
+            className={'toast' + (leaving.has(t.id) ? ' leaving' : '')}
             onClick={() => {
               dismiss(t.id)
               setTab(t.type === 'run_started' || t.type === 'request' ? 'grocery' : 'cupboard')

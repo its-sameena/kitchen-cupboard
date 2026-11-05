@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react'
+import { useState, type MouseEvent, type ReactNode } from 'react'
+import { motionMs } from '../motion'
 import { PROFILE_PALETTE, USER_COLORS, sameColor, textOn } from '../data'
 import { ColorPicker, type TakenColor } from './ColorPicker'
 import { boot, createKitchen, createProfile, joinKitchen, selectProfile, useApp, useKitchen } from '../store'
@@ -121,6 +122,21 @@ export function KitchenSetup() {
 export function ProfilePicker() {
   const k = useKitchen()
   const [adding, setAdding] = useState(k.users.length === 0)
+  // Tapping a profile: its tile swells, the others fade, and its colour floods the screen from the tile.
+  const [opening, setOpening] = useState<string | null>(null)
+  const [flood, setFlood] = useState<{ x: number; y: number; color: string; grown: boolean } | null>(null)
+
+  const open = (e: MouseEvent<HTMLButtonElement>, id: string, color: string) => {
+    if (opening) return
+    if (motionMs(1) === 0) return selectProfile(id)
+    const face = e.currentTarget.querySelector('.picker-face')?.getBoundingClientRect()
+    const x = face ? face.left + face.width / 2 : window.innerWidth / 2
+    const y = face ? face.top + face.height / 2 : window.innerHeight / 2
+    setOpening(id)
+    setFlood({ x, y, color, grown: false })
+    setTimeout(() => setFlood((f) => f && { ...f, grown: true }), motionMs(160))
+    setTimeout(() => selectProfile(id), motionMs(700))
+  }
 
   return (
     <div className="picker">
@@ -130,10 +146,16 @@ export function ProfilePicker() {
       </div>
       <h1>Who’s in the kitchen?</h1>
       <div className="picker-grid">
-        {k.users.map((u) => {
+        {k.users.map((u, i) => {
           const count = k.items.filter((i) => i.owners.includes(u.id)).length
+          const state = opening === u.id ? ' opening' : opening ? ' dimmed' : ''
           return (
-            <button key={u.id} className="picker-tile" onClick={() => selectProfile(u.id)}>
+            <button
+              key={u.id}
+              className={'picker-tile' + state}
+              style={{ '--i': i } as React.CSSProperties}
+              onClick={(e) => open(e, u.id, u.color)}
+            >
               <span className="picker-face" style={{ background: u.color, color: textOn(u.color) }}>
                 {u.avatar ? (
                   <img className="picker-avatar" src={avatarUri(u.avatar, u.color)} alt="" draggable={false} />
@@ -146,7 +168,11 @@ export function ProfilePicker() {
             </button>
           )
         })}
-        <button className="picker-tile" onClick={() => setAdding(true)}>
+        <button
+          className={'picker-tile' + (opening ? ' dimmed' : '')}
+          style={{ '--i': k.users.length } as React.CSSProperties}
+          onClick={() => setAdding(true)}
+        >
           <span className="picker-face picker-add">
             <UI.add size={44} strokeWidth={1.4} />
           </span>
@@ -155,6 +181,14 @@ export function ProfilePicker() {
         </button>
       </div>
       <p className="picker-note">This phone will remember who you are.</p>
+
+      {flood && (
+        <div
+          className="picker-flood"
+          aria-hidden
+          style={{ background: flood.color, clipPath: `circle(${flood.grown ? 1500 : 0}px at ${flood.x}px ${flood.y}px)` }}
+        />
+      )}
 
       <Sheet open={adding} onClose={() => setAdding(false)} title="New profile">
         <NewProfileForm taken={k.users.map((u) => ({ color: u.color, name: u.name }))} onDone={() => setAdding(false)} />

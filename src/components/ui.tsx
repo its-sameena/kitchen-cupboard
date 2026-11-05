@@ -1,10 +1,15 @@
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { ICON_SIZES } from '../config'
 import { avatarUri } from '../avatar'
+import { motionMs } from '../motion'
 import { textOn } from '../data'
 import { ItemIcon, UI } from '../icons'
 import type { Item, User } from '../types'
 
+/**
+ * Bottom sheet. Springs up when opened; closing (X, backdrop, Escape, or
+ * dragging the handle down) slides it away before calling onClose.
+ */
 export function Sheet({
   open,
   onClose,
@@ -16,32 +21,82 @@ export function Sheet({
   title?: ReactNode
   children: ReactNode
 }) {
-  const ref = useRef<HTMLDivElement>(null)
+  const [closing, setClosing] = useState(false)
+  const [dragY, setDragY] = useState(0)
+  const drag = useRef<{ startY: number } | null>(null)
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
+
+  const close = useCallback(() => {
+    if (timer.current) return
+    setClosing(true)
+    timer.current = setTimeout(() => {
+      timer.current = undefined
+      setClosing(false)
+      setDragY(0)
+      onClose()
+    }, motionMs(260))
+  }, [onClose])
+
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close()
     window.addEventListener('keydown', onKey)
     document.body.classList.add('no-scroll')
     return () => {
       window.removeEventListener('keydown', onKey)
       document.body.classList.remove('no-scroll')
     }
-  }, [open, onClose])
+  }, [open, close])
+
+  useEffect(() => () => clearTimeout(timer.current), [])
+
   if (!open) return null
+
+  const dragging = drag.current !== null
   return (
-    <div className="sheet-backdrop" onClick={onClose}>
+    <div
+      className={'sheet-backdrop' + (closing ? ' closing' : '')}
+      style={dragY > 0 && !closing ? { opacity: Math.max(0.3, 1 - dragY / 500) } : undefined}
+      onClick={close}
+    >
       <div
-        className="sheet"
+        className={'sheet' + (closing ? ' closing' : '') + (dragging ? ' dragging' : '')}
         role="dialog"
         aria-modal="true"
-        ref={ref}
+        style={dragY > 0 ? { transform: `translateY(${dragY}px)` } : undefined}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="sheet-handle" aria-hidden />
+        {/* Drag the handle down to dismiss */}
+        <div
+          className="sheet-grab"
+          onPointerDown={(e) => {
+            drag.current = { startY: e.clientY }
+            try {
+              e.currentTarget.setPointerCapture(e.pointerId)
+            } catch {
+              /* capture is a nicety; dragging still works without it */
+            }
+          }}
+          onPointerMove={(e) => {
+            if (drag.current) setDragY(Math.max(0, e.clientY - drag.current.startY))
+          }}
+          onPointerUp={() => {
+            if (!drag.current) return
+            drag.current = null
+            if (dragY > 110) close()
+            else setDragY(0)
+          }}
+          onPointerCancel={() => {
+            drag.current = null
+            setDragY(0)
+          }}
+        >
+          <div className="sheet-handle" aria-hidden />
+        </div>
         {title && (
           <div className="sheet-head">
             <h2>{title}</h2>
-            <button className="icon-btn" onClick={onClose} aria-label="Close">
+            <button className="icon-btn" onClick={close} aria-label="Close">
               <UI.close size={ICON_SIZES.button} />
             </button>
           </div>
@@ -121,7 +176,11 @@ export function ItemCard({
         <ItemIcon name={item.icon} className="item-icon" size={ICON_SIZES.card} strokeWidth={1.5} />
         <span className="item-name">{item.name}</span>
       </span>
-      {owners.length > 1 && <span className="item-count">x{owners.length}</span>}
+      {owners.length > 1 && (
+        <span className="item-count" key={owners.length}>
+          x{owners.length}
+        </span>
+      )}
       {out && <span className="item-out-tag">Out</span>}
     </button>
   )

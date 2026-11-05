@@ -44,6 +44,14 @@
   --card-w: 86px;          /* item card size on the shelves */
   --card-h: 124px;
 
+  /* Motion (see "Animations" in README.md) */
+  --motion: 1;             /* speed multiplier: 2 = twice as slow, 0.5 = twice as fast, 0 = no animation */
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);   /* bouncy overshoot: cards, badges, presses */
+  --ease-bounce: cubic-bezier(.34, 1.3, .64, 1);    /* gentler overshoot: run card, tab pill, toasts */
+  --ease-soft: cubic-bezier(.22, 1, .36, 1);        /* smooth ease-out: fades, slides */
+  --ease-sheet: cubic-bezier(.32, 1.2, .55, 1);     /* bottom sheets rising */
+  --ease-exit: cubic-bezier(.4, 0, 1, 1);           /* things leaving the screen */
+
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --tabbar-h: 64px;
@@ -132,7 +140,7 @@ code { font-family: var(--font-mono); font-size: 13px; background: var(--surface
 .tab { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--muted); border-radius: 16px; }
 .tab-icon { position: relative; display: grid; place-items: center; }
 .tab-label { font-size: 11px; font-weight: 600; }
-.tab.on { color: var(--ink); background: var(--surface-2); }
+.tab.on { color: var(--ink); }
 .tab.live .tab-label { color: var(--run); }
 
 .run-banner {
@@ -262,9 +270,9 @@ textarea { resize: vertical; padding: 12px 14px; }
   flex: none; width: var(--card-w); height: var(--card-h); scroll-snap-align: start;
   border-radius: var(--radius-sm); padding: 3px; position: relative;
   background: var(--ring);
-  transition: opacity 0.2s, transform 0.12s, filter 0.2s;
+  transition: opacity 0.2s, transform 0.16s var(--ease-spring), filter 0.2s;
 }
-.item:active { transform: scale(0.96); }
+.item:active { transform: scale(0.95); }
 .item-face {
   width: 100%; height: 100%; border-radius: calc(var(--radius-sm) - 3px);
   display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 6px 0;
@@ -296,29 +304,54 @@ textarea { resize: vertical; padding: 12px 14px; }
 .empty-shelves .cat-chip { background: var(--surface); }
 .empty-search { padding: 30px 16px; text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; }
 
-.add-pill {
-  position: fixed; z-index: 25; left: 50%; transform: translateX(-50%);
+.add-fab {
+  position: fixed; z-index: 25; left: calc(50% - 29px);
   bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 22px);
-  display: inline-flex; align-items: center; gap: 8px;
-  height: 50px; padding: 0 26px; border-radius: 999px;
-  background: var(--accent); color: var(--accent-ink); font-weight: 600; font-size: 15px;
+  width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: var(--accent-ink);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+  transition: transform .16s var(--ease-spring);
 }
-.add-pill:active { transform: translateX(-50%) scale(0.96); }
+.add-fab:active { transform: scale(0.92); }
+
+/* "Add ingredients" card the plus button grows into */
+.add-backdrop { position: fixed; inset: 0; z-index: 40; background: rgba(10, 10, 10, 0.35); }
+.add-card {
+  position: fixed; z-index: 41; left: 12px; right: 12px; margin: 0 auto; max-width: 496px;
+  bottom: calc(var(--tabbar-h) + var(--safe-bottom) + 18px);
+  background: var(--surface); border-radius: 24px; padding: 18px 16px 16px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  display: flex; flex-direction: column; gap: 14px; transform-origin: 50% 100%;
+}
+.add-card-head { display: flex; align-items: center; gap: 8px; }
+.add-card-head h2 { flex: 1; font-size: 18px; }
+.add-card-head .icon-btn { background: var(--surface-2); width: 34px; height: 34px; }
+.add-card .field { margin: 0; }
+.add-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.add-chip {
+  display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px 0 10px; border-radius: 999px;
+  background: var(--surface-2); font-size: 14px; font-weight: 600;
+  transition: background .16s, color .16s, transform .2s var(--ease-spring);
+}
+.add-chip.on { background: var(--accent); color: var(--accent-ink); transform: scale(1.06); }
+.add-input { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 14px; border-radius: var(--radius-sm); background: var(--surface-2); color: var(--muted); }
+.add-input input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; min-height: 0; padding: 0; }
+.add-more { align-self: center; font-size: 13px; }
 
 /* ───────────── Sheets ───────────── */
 .sheet-backdrop {
   position: fixed; inset: 0; z-index: 50; background: rgba(10, 10, 10, 0.35);
   display: flex; align-items: flex-end; justify-content: center;
-  animation: fade 0.18s ease-out;
+  animation: kc-fade calc(220ms * var(--motion)) ease-out backwards;
+  transition: opacity calc(260ms * var(--motion)) ease;
 }
 .sheet {
   width: 100%; max-width: 520px; max-height: 88dvh; display: flex; flex-direction: column;
   background: var(--surface); border-radius: 26px 26px 0 0;
   padding: 8px 18px calc(var(--safe-bottom) + 18px);
-  animation: slideUp 0.26s cubic-bezier(0.2, 0.9, 0.3, 1.05);
+  animation: slideUp calc(460ms * var(--motion)) var(--ease-sheet) backwards;
+  transition: transform calc(380ms * var(--motion)) var(--ease-sheet);
 }
-.sheet-handle { width: 36px; height: 5px; border-radius: 3px; background: var(--surface-2); margin: 0 auto 10px; flex: none; }
+.sheet-handle { width: 36px; height: 5px; border-radius: 3px; background: #d8d7d1; margin: 0 auto; flex: none; }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .sheet-head .icon-btn { background: var(--surface-2); width: 34px; height: 34px; }
 .sheet-body { overflow-y: auto; overscroll-behavior: contain; padding-bottom: 4px; }
@@ -381,7 +414,13 @@ textarea { resize: vertical; padding: 12px 14px; }
 }
 .check.on { background: var(--success); border-color: var(--success); }
 .g-row.got { opacity: 0.55; }
-.g-row.got .g-name { text-decoration: line-through; }
+.g-name { position: relative; align-self: flex-start; }
+.g-name::after {
+  content: ''; position: absolute; left: -2px; top: 54%; height: 2px; width: 0; border-radius: 1px; background: currentColor;
+  transition: width calc(260ms * var(--motion)) cubic-bezier(.65, 0, .35, 1) calc(180ms * var(--motion));
+}
+.g-row.got .g-name::after { width: calc(100% + 4px); }
+.g-row { transition: opacity calc(300ms * var(--motion)) ease calc(200ms * var(--motion)); }
 
 .empty { text-align: center; padding: 40px 16px; }
 .empty-icon { color: var(--muted); margin: 0 auto 8px; display: block; }
@@ -430,8 +469,10 @@ textarea { resize: vertical; padding: 12px 14px; }
 .toast {
   pointer-events: auto; text-align: left; display: flex; align-items: flex-start; gap: 12px;
   background: var(--ink); color: #fff; border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow);
-  animation: drop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  animation: drop calc(460ms * var(--motion)) var(--ease-bounce) backwards;
+  transition: transform calc(300ms * var(--motion)) var(--ease-exit), opacity calc(300ms * var(--motion)) ease;
 }
+.toast.leaving { transform: translateY(-150%); opacity: 0; }
 .toast-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .toast-text span { font-size: 14px; opacity: 0.75; }
 .toast-icon { margin-top: 2px; color: var(--run); }
@@ -472,7 +513,7 @@ textarea { resize: vertical; padding: 12px 14px; }
 .picker-face {
   width: 100%; aspect-ratio: 3 / 4; border-radius: var(--radius); display: grid; place-items: center;
   font-family: var(--font-display); font-size: 64px; color: #fff;
-  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.4); transition: transform 0.12s;
+  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.4); transition: transform .24s var(--ease-spring);
 }
 .picker-tile:active .picker-face { transform: scale(0.95); }
 .picker-tile:focus-visible .picker-face { outline: 3px solid var(--ink); outline-offset: 3px; }
@@ -579,3 +620,87 @@ textarea { resize: vertical; padding: 12px 14px; }
 .avatar-row-text small { font-size: 12px; }
 .picker-face { overflow: hidden; }
 .picker-avatar { width: 100%; height: auto; display: block; }
+
+/* ═══════════════════════════ MOTION ═══════════════════════════
+   Timings come from the Claude Design prototype. Every duration is
+   multiplied by --motion (THEME), so the whole app can be slowed down,
+   sped up or switched off in one place. */
+@keyframes kc-fade { from { opacity: 0; } }
+@keyframes kc-fade-up { from { opacity: 0; transform: translateY(10px); } }
+@keyframes kc-rise { from { opacity: 0; transform: translateY(14px) scale(.94); } }
+@keyframes kc-glass { from { opacity: 0; transform: translateX(-28px) scaleX(.9); } }
+@keyframes kc-pop { 0% { opacity: 0; transform: scale(0); } 60% { opacity: 1; transform: scale(1.35); } 100% { transform: scale(1); } }
+@keyframes kc-pop-soft { 0% { opacity: 0; transform: scale(.6); } 60% { opacity: 1; transform: scale(1.06); } 100% { transform: scale(1); } }
+@keyframes kc-morph { from { opacity: 0; transform: scale(.18); border-radius: 60px; } }
+@keyframes kc-morph-out { to { opacity: 0; transform: scale(.18); border-radius: 60px; } }
+@keyframes kc-fade-out { to { opacity: 0; } }
+@keyframes kc-chip { from { opacity: 0; transform: translateX(-14px); } }
+@keyframes kc-drop { from { opacity: 0; transform: translateY(-18px) scale(.97); } }
+@keyframes kc-row-in { from { opacity: 0; transform: translateY(-16px); } }
+@keyframes kc-sway { from { transform: rotate(-2.5deg) scale(1.05); } to { transform: rotate(2.5deg) scale(1.05); } }
+@keyframes kc-breathe { from { transform: scale(1); opacity: .7; } to { transform: scale(1.03); opacity: 1; } }
+
+/* Page title fades up whenever the tab changes */
+.page-title .kicker { animation: kc-fade-up calc(420ms * var(--motion)) var(--ease-soft) backwards; }
+.page-title h1 { animation: kc-fade-up calc(420ms * var(--motion)) var(--ease-soft) backwards; animation-delay: calc(60ms * var(--motion)); }
+
+/* Tab bar: one pill slides to the active tab */
+.tab { position: relative; z-index: 1; }
+.tab-pill {
+  position: absolute; top: 6px; bottom: 6px; left: 6px; width: calc((100% - 12px) / var(--tabs));
+  border-radius: 16px; background: var(--surface-2);
+  transform: translateX(calc(var(--tab-i) * 100%));
+  transition: transform calc(380ms * var(--motion)) var(--ease-bounce);
+}
+
+/* Shelves: the glass slides in, then cards spring up 40ms apart; shelves follow each other */
+.shelf-glass { animation: kc-glass calc(360ms * var(--motion)) var(--ease-soft) backwards; animation-delay: calc(var(--shelf-d, 0ms) * var(--motion)); }
+.shelf-row > .item { --i: 0; animation: kc-rise calc(260ms * var(--motion)) var(--ease-spring) backwards; animation-delay: calc((var(--shelf-d, 0ms) + 120ms + var(--i) * 40ms) * var(--motion)); }
+.shelf-row > .item:nth-child(2) { --i: 1; } .shelf-row > .item:nth-child(3) { --i: 2; } .shelf-row > .item:nth-child(4) { --i: 3; }
+.shelf-row > .item:nth-child(5) { --i: 4; } .shelf-row > .item:nth-child(6) { --i: 5; } .shelf-row > .item:nth-child(n + 7) { --i: 6; }
+/* "xN" badge pops once its card has landed (and again whenever the count changes) */
+.item-count, .item-out-tag { animation: kc-pop calc(380ms * var(--motion)) var(--ease-spring) backwards; animation-delay: calc((var(--shelf-d, 0ms) + 420ms + var(--i, 0) * 40ms) * var(--motion)); }
+.item-face { transition: background calc(320ms * var(--motion)) ease, outline-color calc(320ms * var(--motion)) ease; }
+.item-icon, .item-name { transition: opacity calc(320ms * var(--motion)) ease; }
+/* After the first load, new cards and badges animate straight away */
+.cupboard-screen.settled .shelf-glass, .cupboard-screen.settled .shelf-row > .item,
+.cupboard-screen.settled .item-count, .cupboard-screen.settled .item-out-tag, .item-hero-card .item-count, .item-hero-card .item-out-tag { animation-delay: 0ms; }
+
+/* Plus button rises in after the shelves, then grows into the "Add ingredients" card */
+.add-fab { animation: kc-rise calc(420ms * var(--motion)) var(--ease-spring) backwards; animation-delay: calc(640ms * var(--motion)); }
+.add-fab.again { animation-delay: 0ms; }
+.add-backdrop { animation: kc-fade calc(220ms * var(--motion)) ease-out backwards; }
+.add-card { animation: kc-morph calc(340ms * var(--motion)) var(--ease-bounce) backwards; }
+.add-card.closing { animation: kc-morph-out calc(220ms * var(--motion)) var(--ease-exit) forwards; }
+.add-backdrop.closing { animation: kc-fade-out calc(220ms * var(--motion)) ease forwards; }
+.add-chip { animation: kc-pop calc(300ms * var(--motion)) var(--ease-spring) backwards; animation-delay: calc((140ms + var(--i, 0) * 30ms) * var(--motion)); }
+
+/* Sheets: follow the finger when dragged by the handle, slide away when closing */
+.sheet-grab { margin: -8px -18px 6px; padding: 12px 0 10px; cursor: grab; touch-action: none; flex: none; }
+.sheet.dragging { transition: none; }
+.sheet.closing { transform: translateY(110%) !important; transition: transform calc(260ms * var(--motion)) var(--ease-exit); }
+.sheet-backdrop.closing { opacity: 0; }
+
+/* Item sheet: owner chips slide in one by one */
+.owner-list li { animation: kc-chip calc(300ms * var(--motion)) var(--ease-soft) backwards; animation-delay: calc((180ms + var(--i, 0) * 60ms) * var(--motion)); }
+
+/* Groceries */
+.run-card.live { animation: kc-drop calc(440ms * var(--motion)) var(--ease-bounce) backwards; }
+.store-btn { animation: kc-pop-soft calc(340ms * var(--motion)) var(--ease-spring) backwards; animation-delay: calc((160ms + var(--i, 0) * 60ms) * var(--motion)); transition: background calc(160ms * var(--motion)) ease, color calc(160ms * var(--motion)) ease, transform .22s var(--ease-spring); }
+.store-btn.picked { background: var(--store); color: #fff; transform: scale(.96); }
+.check { transition: background calc(180ms * var(--motion)) ease, border-color calc(180ms * var(--motion)) ease, transform .22s var(--ease-spring); }
+.check.on { transform: scale(1.08); }
+.check svg path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset calc(260ms * var(--motion)) cubic-bezier(.65, 0, .35, 1) calc(90ms * var(--motion)); }
+.check.on svg path { stroke-dashoffset: 0; }
+.g-row.g-new { animation: kc-row-in calc(420ms * var(--motion)) var(--ease-soft) backwards; }
+
+/* Profile picker */
+.picker h1 { animation: kc-fade-up calc(520ms * var(--motion)) var(--ease-soft) backwards; animation-delay: calc(60ms * var(--motion)); }
+.picker-tile { animation: kc-rise calc(460ms * var(--motion)) var(--ease-bounce) backwards; animation-delay: calc((260ms + var(--i, 0) * 70ms) * var(--motion)); transition: opacity calc(200ms * var(--motion)) ease; }
+.picker-tile.dimmed { opacity: .3; }
+.picker-tile.opening .picker-face { transform: scale(1.08); }
+.picker-avatar { transform-origin: 50% 85%; animation: kc-sway calc(3200ms * var(--motion)) ease-in-out infinite alternate; }
+.picker-tile:nth-child(even) .picker-avatar { animation-duration: calc(3600ms * var(--motion)); animation-delay: calc(-1800ms * var(--motion)); }
+.picker-add { animation: kc-breathe calc(2600ms * var(--motion)) ease-in-out infinite alternate; animation-delay: calc(900ms * var(--motion)); }
+.picker-note { animation: kc-fade calc(400ms * var(--motion)) ease-out backwards; animation-delay: calc(700ms * var(--motion)); }
+.picker-flood { position: fixed; inset: 0; z-index: 80; pointer-events: none; transition: clip-path calc(520ms * var(--motion)) cubic-bezier(.65, 0, .35, 1); }

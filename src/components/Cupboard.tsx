@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ICON_SIZES } from '../config'
 import { CATEGORIES, categoryById, suggestFor } from '../data'
 import { CATEGORY_ICONS, DEFAULT_ITEM_ICON, ITEM_ICONS, ItemIcon, UI } from '../icons'
@@ -16,6 +16,7 @@ import {
   useMe,
 } from '../store'
 import type { CategoryId, Item, User } from '../types'
+import { motionMs } from '../motion'
 import { Avatar, ItemCard, Sheet, timeAgo } from './ui'
 
 export default function Cupboard() {
@@ -25,6 +26,15 @@ export default function Cupboard() {
   const [query, setQuery] = useState('')
   const [openItem, setOpenItem] = useState<string | null>(null)
   const [adding, setAdding] = useState<CategoryId | null | false>(false)
+  const [addOpen, setAddOpen] = useState(false)
+  const [fabAgain, setFabAgain] = useState(false)
+  const [moreName, setMoreName] = useState('')
+  // Entrance animations play on first load only; afterwards new cards animate straight away.
+  const [settled, setSettled] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(true), motionMs(1400))
+    return () => clearTimeout(t)
+  }, [])
 
   const q = query.trim().toLowerCase()
   const shelves = useMemo(
@@ -44,7 +54,7 @@ export default function Cupboard() {
   const mine = s.items.filter((i) => i.owners.includes(me.id)).length
 
   return (
-    <div className="cupboard-screen">
+    <div className={'cupboard-screen' + (settled ? ' settled' : '')}>
       <div className="toolbar">
         <div className="search">
           <UI.search size={16} aria-hidden />
@@ -73,9 +83,10 @@ export default function Cupboard() {
         </div>
       </div>
 
-      {filled.map((shelf) => (
+      {filled.map((shelf, order) => (
         <Shelf
           key={shelf.id}
+          order={order}
           id={shelf.id}
           label={shelf.label}
           count={shelf.items.filter((i) => i.owners.length).length}
@@ -115,18 +126,32 @@ export default function Cupboard() {
         </section>
       )}
 
-      <button className="add-pill" onClick={() => setAdding(null)}>
-        <UI.add size={ICON_SIZES.button} /> Add item
-      </button>
+      {addOpen ? (
+        <AddIngredients
+          onClose={() => {
+            setAddOpen(false)
+            setFabAgain(true)
+          }}
+          onMore={(name) => {
+            setMoreName(name)
+            setAdding(null)
+          }}
+        />
+      ) : (
+        <button className={'add-fab' + (fabAgain ? ' again' : '')} onClick={() => setAddOpen(true)} aria-label="Add ingredients">
+          <UI.add size={26} strokeWidth={2.2} />
+        </button>
+      )}
 
       <ItemSheet itemId={openItem} onClose={() => setOpenItem(null)} me={me} />
       <AddItemSheet
         open={adding !== false}
         initialCategory={adding || undefined}
-        initialName={q && shelves.length === 0 ? query : ''}
+        initialName={moreName || (q && filled.length === 0 ? query : '')}
         onClose={() => {
           setAdding(false)
           setQuery('')
+          setMoreName('')
         }}
       />
     </div>
@@ -172,7 +197,7 @@ function ItemSheet({ itemId, onClose, me }: { itemId: string | null; onClose: ()
       ) : (
         <div className="item-detail">
           <div className="item-hero">
-            <div className="shelf" style={shelfVar(item.category)}>
+            <div className="shelf item-hero-card" style={shelfVar(item.category)}>
               <ItemCard item={item} users={s.users} onClick={() => setEditing(true)} />
             </div>
             <div>
@@ -191,8 +216,8 @@ function ItemSheet({ itemId, onClose, me }: { itemId: string | null; onClose: ()
           </h3>
           {owners.length ? (
             <ul className="owner-list">
-              {owners.map((u) => (
-                <li key={u.id}>
+              {owners.map((u, i) => (
+                <li key={u.id} style={{ '--i': i } as React.CSSProperties}>
                   <Avatar user={u} size={28} />
                   <span>{u.id === me.id ? 'You' : u.name}</span>
                 </li>
@@ -431,12 +456,14 @@ const shelfVar = (id: CategoryId) => ({ '--shelf': `var(--shelf-${id})`, margin:
 
 /** One shelf: heading with count and arrows, a scrolling row of cards, and the glass shelf in front. */
 function Shelf({
+  order,
   id,
   label,
   count,
   onAdd,
   children,
 }: {
+  order: number
   id: CategoryId
   label: string
   count: number
@@ -446,7 +473,12 @@ function Shelf({
   const row = useRef<HTMLDivElement>(null)
   const scroll = (dir: 1 | -1) => row.current?.scrollBy({ left: dir * row.current.clientWidth * 0.8, behavior: 'smooth' })
   return (
-    <section className="shelf" style={{ '--shelf': `var(--shelf-${id})` } as React.CSSProperties} aria-label={label}>
+    <section
+      className="shelf"
+      // Each shelf starts 180ms after the one above it (capped so long cupboards don't wait).
+      style={{ '--shelf': `var(--shelf-${id})`, '--shelf-d': `${120 + Math.min(order, 4) * 180}ms` } as React.CSSProperties}
+      aria-label={label}
+    >
       <div className="shelf-head">
         <span className="shelf-title">
           <ShelfIcon id={id} /> {label}
@@ -478,5 +510,124 @@ function Shelf({
         <div className="shelf-glass" aria-hidden />
       </div>
     </section>
+  )
+}
+
+/** Common staples offered in the "Add ingredients" card (after anything that's run out). */
+const STAPLES = ['Eggs', 'Milk', 'Bread', 'Butter', 'Onions', 'Bananas', 'Rice', 'Pasta', 'Olive oil', 'Coffee beans', 'Cheddar', 'Tomatoes']
+
+/** The card the plus button grows into: tap suggested ingredients or type one. */
+function AddIngredients({ onClose, onMore }: { onClose: () => void; onMore: (name: string) => void }) {
+  const s = useKitchen()
+  const me = useMe()!
+  const [picked, setPicked] = useState<string[]>([])
+  const [draft, setDraft] = useState('')
+  const [closing, setClosing] = useState(false)
+  const norm = (n: string) => n.trim().toLowerCase()
+
+  // Worked out once when the card opens, so chips don't jump around while you tap.
+  const [suggestions] = useState(() => {
+    const mine = new Set(s.items.filter((i) => i.owners.includes(me.id)).map((i) => norm(i.name)))
+    const outOfStock = s.items.filter((i) => i.owners.length === 0).map((i) => i.name)
+    const seen = new Set<string>()
+    return [...outOfStock, ...STAPLES]
+      .filter((n) => {
+        const k = norm(n)
+        if (mine.has(k) || seen.has(k)) return false
+        seen.add(k)
+        return true
+      })
+      .slice(0, 8)
+  })
+
+  const count = picked.length + (draft.trim() ? 1 : 0)
+
+  const close = (after?: () => void) => {
+    if (closing) return
+    setClosing(true)
+    setTimeout(() => {
+      onClose()
+      after?.()
+    }, motionMs(220))
+  }
+
+  const add = () => {
+    const names = [...picked, ...(draft.trim() ? [draft.trim()] : [])]
+    for (const n of names) {
+      const existing = s.items.find((i) => norm(i.name) === norm(n))
+      if (existing) {
+        if (!existing.owners.includes(me.id)) haveItToo(existing.id)
+      } else {
+        const sug = suggestFor(n)
+        const category = sug?.category ?? 'other'
+        addItem({ name: n, icon: sug?.icon ?? DEFAULT_ITEM_ICON[category], category })
+      }
+    }
+    close()
+  }
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close()
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
+  return (
+    <>
+      <div className={'add-backdrop' + (closing ? ' closing' : '')} onClick={() => close()} aria-hidden />
+      <div className={'add-card' + (closing ? ' closing' : '')} role="dialog" aria-label="Add ingredients">
+        <div className="add-card-head">
+          <h2>Add ingredients</h2>
+          <button className="icon-btn" onClick={() => close()} aria-label="Close">
+            <UI.close size={16} />
+          </button>
+        </div>
+
+        {suggestions.length > 0 && (
+          <div>
+            <div className="muted small" style={{ fontWeight: 600, marginBottom: 8 }}>
+              Suggested
+            </div>
+            <div className="add-chips">
+              {suggestions.map((n, i) => {
+                const on = picked.includes(n)
+                return (
+                  <button
+                    key={n}
+                    className={'add-chip' + (on ? ' on' : '')}
+                    style={{ '--i': i } as React.CSSProperties}
+                    aria-pressed={on}
+                    onClick={() => setPicked((p) => (on ? p.filter((x) => x !== n) : [...p, n]))}
+                  >
+                    {on ? <UI.check size={14} strokeWidth={2.6} /> : <UI.add size={14} strokeWidth={2.4} />}
+                    {n}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        <label className="add-input">
+          <UI.search size={18} aria-hidden />
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && count > 0 && add()}
+            placeholder="Or type an ingredient…"
+            aria-label="Type an ingredient"
+            maxLength={32}
+            enterKeyHint="done"
+          />
+        </label>
+
+        <button className="btn btn-primary btn-block" disabled={!count} onClick={add}>
+          {count ? `Add ${count} to cupboard` : 'Add to cupboard'}
+        </button>
+        <button className="link add-more" onClick={() => close(() => onMore(draft.trim()))}>
+          Choose shelf and icon instead
+        </button>
+      </div>
+    </>
   )
 }

@@ -103,6 +103,18 @@ Or just describe what you want to Claude Code, e.g. *"make the buttons navy and 
 
 After changing the look, phones get it on their next launch once the app is redeployed.
 
+### Animations
+
+All motion is CSS, with timings taken from the Claude Design prototype.
+
+| What you want to change | Where |
+| --- | --- |
+| **Overall speed** | `--motion` in the `THEME` block of `src/styles.css`: `1` = as designed, `2` = twice as slow, `0.5` = twice as fast, `0` = no animation. |
+| **The "feel" (bounciness)** | The easing curves right below it: `--ease-spring` (cards, badges, presses), `--ease-bounce` (run card, tab pill, toasts), `--ease-soft` (fades and slides), `--ease-sheet` (bottom sheets), `--ease-exit` (things leaving). Try curves at [cubic-bezier.com](https://cubic-bezier.com). |
+| **A single animation** | The `MOTION` section at the end of `src/styles.css`; each rule is labelled (shelves, plus button, sheets, groceries, profile picker). Durations are written as `calc(260ms * var(--motion))`; change the number. |
+
+Phones with "Reduce motion" turned on (iPhone: Settings → Accessibility → Motion) get no animations.
+
 ### Shop logos
 
 The grocery-run buttons show the shop names in their brand colours. To show logos instead:
