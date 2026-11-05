@@ -1,0 +1,5 @@
+project_id = "kitchen-cupboard"
+
+[functions.notify]
+# The function checks the caller's JWT itself.
+verify_jwt = true
