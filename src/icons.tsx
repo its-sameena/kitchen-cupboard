@@ -11,7 +11,7 @@ import {
   Grape, Ham, Heart, House, IceCreamCone, Leaf, LeafyGreen, Lightbulb, Martini, MessageCircle, MessageSquare,
   Milk, Nut, Package, PaperBag, Pencil, Pizza, Plus, Popcorn, Popsicle, Refrigerator, Salad, Sandwich, Search,
   Share2, ShoppingBag, ShoppingBasket, ShoppingCart, Shrimp, Smartphone, Snowflake, Soup, SprayCan, Sprout,
-  Store, Trash2, ChevronLeft, Clipboard, ClipboardCheck, Shuffle, TriangleAlert, Unplug, Wheat, Wine, WifiOff, X, Archive, ClipboardList,
+  Store, Trash2, ChevronLeft, Clipboard, ClipboardCheck, Shuffle, Camera, ReceiptText, TriangleAlert, Unplug, Wheat, Wine, WifiOff, X, Archive, ClipboardList,
 } from 'lucide-react'
 import type { CategoryId, EventType, FeedbackKind } from './types'
 
@@ -37,6 +37,8 @@ export const UI = {
   copy: Clipboard,
   copied: ClipboardCheck,
   shuffle: Shuffle,
+  camera: Camera,
+  receipt: ReceiptText,
   avatar: Sprout,
   switchProfile: ArrowLeftRight,
   back: ArrowLeft,

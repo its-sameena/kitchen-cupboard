@@ -17,6 +17,7 @@ import {
 } from '../store'
 import type { CategoryId, Item, User } from '../types'
 import { motionMs } from '../motion'
+import { ReceiptReview } from './ReceiptReview'
 import { Avatar, ItemCard, Sheet, timeAgo } from './ui'
 
 export default function Cupboard() {
@@ -29,6 +30,7 @@ export default function Cupboard() {
   const [addOpen, setAddOpen] = useState(false)
   const [fabAgain, setFabAgain] = useState(false)
   const [moreName, setMoreName] = useState('')
+  const [receipt, setReceipt] = useState<File | null>(null)
   // Entrance animations play on first load only; afterwards new cards animate straight away.
   const [settled, setSettled] = useState(false)
   useEffect(() => {
@@ -136,6 +138,7 @@ export default function Cupboard() {
             setMoreName(name)
             setAdding(null)
           }}
+          onScan={setReceipt}
         />
       ) : (
         <button className={'add-fab' + (fabAgain ? ' again' : '')} onClick={() => setAddOpen(true)} aria-label="Add ingredients">
@@ -143,6 +146,7 @@ export default function Cupboard() {
         </button>
       )}
 
+      {receipt && <ReceiptReview file={receipt} onClose={() => setReceipt(null)} />}
       <ItemSheet itemId={openItem} onClose={() => setOpenItem(null)} me={me} />
       <AddItemSheet
         open={adding !== false}
@@ -517,7 +521,16 @@ function Shelf({
 const STAPLES = ['Eggs', 'Milk', 'Bread', 'Butter', 'Onions', 'Bananas', 'Rice', 'Pasta', 'Olive oil', 'Coffee beans', 'Cheddar', 'Tomatoes']
 
 /** The card the plus button grows into: tap suggested ingredients or type one. */
-function AddIngredients({ onClose, onMore }: { onClose: () => void; onMore: (name: string) => void }) {
+function AddIngredients({
+  onClose,
+  onMore,
+  onScan,
+}: {
+  onClose: () => void
+  onMore: (name: string) => void
+  onScan: (photo: File) => void
+}) {
+  const photoInput = useRef<HTMLInputElement>(null)
   const s = useKitchen()
   const me = useMe()!
   const [picked, setPicked] = useState<string[]>([])
@@ -578,6 +591,20 @@ function AddIngredients({ onClose, onMore }: { onClose: () => void; onMore: (nam
       <div className={'add-card' + (closing ? ' closing' : '')} role="dialog" aria-label="Add ingredients">
         <div className="add-card-head">
           <h2>Add ingredients</h2>
+          <button className="btn btn-sm btn-ghost" onClick={() => photoInput.current?.click()}>
+            <UI.receipt size={16} /> Scan receipt
+          </button>
+          <input
+            ref={photoInput}
+            type="file"
+            accept="image/*"
+            hidden
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              e.target.value = ''
+              if (f) close(() => onScan(f))
+            }}
+          />
           <button className="icon-btn" onClick={() => close()} aria-label="Close">
             <UI.close size={16} />
           </button>

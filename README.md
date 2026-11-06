@@ -59,6 +59,21 @@ To ship an update later, run `npx vercel --prod` again. Open phones pick it up o
 
 Note: free Supabase projects pause after about a week with no activity. Daily use keeps yours awake; if it does pause, click **Restore** in the dashboard.
 
+### 4. Receipt scanning (optional, free)
+
+**Add ingredients → Scan receipt** photographs a receipt and lists the groceries on it for you to check before adding. It uses Google's Gemini API through the `scan-receipt` function, so your key never reaches the app.
+
+1. Get a free key at [Google AI Studio → API keys](https://aistudio.google.com/apikey). No card is needed. Don't link a billing account to that Google Cloud project if you want it to stay free: then you just hit a daily limit instead of being charged.
+2. Store it as a Supabase secret and deploy the function:
+   ```bash
+   npx supabase secrets set GEMINI_API_KEY=your-key
+   npx supabase functions deploy scan-receipt
+   ```
+3. Optional: `npx supabase secrets set GEMINI_MODEL=<model name>` to pin a model. By default it tries `gemini-flash-latest`, then falls back to others if one is unavailable or out of free quota.
+
+**Free limits:** a few dozen to hundreds of scans per day depending on the model, far more than a household needs. Check your project's limits in AI Studio. When they run out, the app says so and works again the next day.
+**Privacy:** on the free tier Google may use what you send (the receipt photo) to improve its products, and people may review it. Receipts show the shop, time and sometimes the last digits of a card. If that matters to you, crop those out or don't use scanning.
+
 ## Using it with your housemates
 
 1. On the first phone, tap **Start a new one** to create the kitchen. Then **Add profile** for yourself; you can add profiles for your housemates too.
@@ -139,6 +154,7 @@ The grocery-run buttons show the shop names in their brand colours. To show logo
 
 ```bash
 npm run db:status # which migrations your live Supabase database has
+npm run check:catalog # scan-receipt's shelf/icon lists match the app's
 npm run test:db   # runs the migrations in an in-memory Postgres (PGlite) and checks flows + RLS
 npm run build
 ```
