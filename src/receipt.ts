@@ -57,7 +57,7 @@ export async function scanReceipt(file: File): Promise<ScanResult> {
     // The function sends a friendly { error } message; dig it out of the HTTP error.
     const ctx = (error as { context?: Response }).context
     const body = ctx && typeof ctx.json === 'function' ? await ctx.json().catch(() => null) : null
-    if (body?.error) throw new Error(body.error)
+    if (body?.error) throw new Error(body.detail ? `${body.error}\n\nDetails: ${body.detail}` : body.error)
     if (/not found|404/i.test(error.message)) throw new Error('Receipt scanning isn’t set up yet (the scan-receipt function isn’t deployed).')
     throw new Error('Couldn’t reach the receipt scanner. Check your connection and try again.')
   }

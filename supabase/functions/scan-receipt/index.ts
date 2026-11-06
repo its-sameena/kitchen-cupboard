@@ -8,7 +8,7 @@ const ICONS = ["flask-round", "flame", "leaf", "milk", "egg", "drumstick", "beef
 const CATEGORIES = ["spices", "baking", "coffee", "grains", "canned", "sauces", "snacks", "drinks", "produce", "dairy", "cold", "frozen", "other"]
 
 // Tried in order; a model that's unavailable or out of free quota falls through to the next.
-const MODELS = [Deno.env.get('GEMINI_MODEL'), 'gemini-flash-latest', 'gemini-2.5-flash', 'gemini-flash-lite-latest']
+const MODELS = [Deno.env.get('GEMINI_MODEL'), 'gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-3.8-flash', 'gemini-3.5-flash-lite']
   .filter((m, i, a): m is string => !!m && a.indexOf(m) === i)
 
 const MAX_BASE64 = 7_000_000 // ~5 MB image; the app sends ~300 KB
@@ -78,8 +78,14 @@ function clean(raw: unknown): { store: string; items: Item[] } {
   }
 }
 
+class GeminiError extends Error {
+  constructor(readonly kind: 'key' | 'quota' | 'other', readonly detail: string) {
+    super(detail)
+  }
+}
+
 async function askGemini(key: string, image: string, mime: string) {
-  let last = ''
+  const tried: string[] = []
   for (const model of MODELS) {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
@@ -91,28 +97,48 @@ async function askGemini(key: string, image: string, mime: string) {
     })
     if (res.ok) {
       const body = await res.json()
-      const text = body?.candidates?.[0]?.content?.parts?.map((p: { text?: string }) => p.text ?? '').join('') ?? ''
+      const cand = body?.candidates?.[0]
+      const text = cand?.content?.parts?.map((p: { text?: string }) => p.text ?? '').join('') ?? ''
       try {
         return { model, result: clean(JSON.parse(text)) }
       } catch {
-        last = 'unreadable answer'
+        // Empty or blocked answer (e.g. finishReason SAFETY): try the next model.
+        tried.push(`${model}: no usable answer (${cand?.finishReason ?? body?.promptFeedback?.blockReason ?? 'empty'})`)
         continue
       }
     }
-    last = `${res.status}`
-    console.error('gemini', model, res.status, (await res.text()).slice(0, 300))
-    // 404/400: model name not available any more; 429: this model's free quota is used up. Try the next one.
+    const errText = await res.text()
+    console.error('gemini', model, res.status, errText.slice(0, 500))
+    let message = ''
+    try {
+      message = JSON.parse(errText)?.error?.message ?? ''
+    } catch {
+      message = errText.slice(0, 120)
+    }
+    // A bad key fails the same way on every model, so stop and say so.
+    if (/API_KEY_INVALID|API key not valid|API key expired|PERMISSION_DENIED|has not been used in project|is disabled/i.test(errText) || res.status === 403) {
+      throw new GeminiError('key', `${res.status} ${message}`)
+    }
+    tried.push(`${model}: ${res.status} ${message}`.slice(0, 160))
+    // 404/400: model not available; 429: its free quota is used up; 5xx: busy. Try the next one.
     if (![400, 404, 429, 500, 503].includes(res.status)) break
   }
-  throw new Error(last)
+  const allQuota = tried.length > 0 && tried.every((t) => / 429 /.test(t))
+  throw new GeminiError(allQuota ? 'quota' : 'other', tried.join(' | '))
 }
+
+/** Placeholder or obviously truncated keys never work; catch them before calling Google. */
+const looksLikeKey = (k: string) => /^[A-Za-z0-9_-]{30,}$/.test(k)
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'POST only' }, 405)
 
-  const key = Deno.env.get('GEMINI_API_KEY')
+  const key = (Deno.env.get('GEMINI_API_KEY') ?? '').trim()
   if (!key) return json({ error: 'Receipt scanning isn’t set up yet (missing GEMINI_API_KEY).' }, 501)
+  if (!looksLikeKey(key)) {
+    return json({ error: 'The Gemini API key isn’t set correctly. Store your real key from aistudio.google.com/apikey in GEMINI_API_KEY (not the example text).' }, 501)
+  }
 
   // Only phones connected to a kitchen may use the scanner (and your free quota).
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
@@ -130,8 +156,12 @@ Deno.serve(async (req) => {
     const { model, result } = await askGemini(key, image, type)
     return json({ ...result, model })
   } catch (e) {
-    const code = (e as Error).message
-    if (code === '429') return json({ error: 'Today’s free receipt scans are used up. Try again tomorrow.' }, 429)
-    return json({ error: 'Couldn’t read the receipt right now. Try again in a moment.' }, 502)
+    const err = e instanceof GeminiError ? e : new GeminiError('other', String(e))
+    console.error('scan-receipt failed', err.kind, err.detail)
+    if (err.kind === 'key') {
+      return json({ error: 'Google rejected the Gemini API key. Check GEMINI_API_KEY is your real key from aistudio.google.com/apikey.', detail: err.detail }, 502)
+    }
+    if (err.kind === 'quota') return json({ error: 'Today’s free receipt scans are used up. Try again tomorrow.', detail: err.detail }, 429)
+    return json({ error: 'Couldn’t read the receipt right now. Try again in a moment.', detail: err.detail }, 502)
   }
 })

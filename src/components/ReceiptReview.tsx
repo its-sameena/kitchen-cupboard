@@ -112,7 +112,7 @@ export function ReceiptReview({ file, onClose }: { file: File; onClose: () => vo
       {phase === 'error' && (
         <div className="rcpt-error">
           <UI.warning size={40} strokeWidth={1.4} className="empty-icon" aria-hidden />
-          <p>{error}</p>
+          <p style={{ whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>{error}</p>
           <div className="actions">
             <button className="btn btn-primary btn-block" onClick={() => retry.current?.click()}>
               <UI.camera size={ICON_SIZES.button} /> Try another photo

@@ -66,7 +66,7 @@ Note: free Supabase projects pause after about a week with no activity. Daily us
 1. Get a free key at [Google AI Studio → API keys](https://aistudio.google.com/apikey). No card is needed. Don't link a billing account to that Google Cloud project if you want it to stay free: then you just hit a daily limit instead of being charged.
 2. Store it as a Supabase secret and deploy the function:
    ```bash
-   npx supabase secrets set GEMINI_API_KEY=your-key
+   npx supabase secrets set GEMINI_API_KEY=AIza...   # ← paste your real key here (it starts with AIza)
    npx supabase functions deploy scan-receipt
    ```
 3. Optional: `npx supabase secrets set GEMINI_MODEL=<model name>` to pin a model. By default it tries `gemini-flash-latest`, then falls back to others if one is unavailable or out of free quota.
