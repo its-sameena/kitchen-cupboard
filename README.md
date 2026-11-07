@@ -105,7 +105,7 @@ Or just describe what you want to Claude Code, e.g. *"make the buttons navy and 
 | **Interface icons** (tabs, buttons, top bar, empty states) | `src/icons.tsx` → `UI` | Find an icon on [lucide.dev/icons](https://lucide.dev/icons), add its name (PascalCase, e.g. `ShoppingBasket`) to the `import` list, and point the entry at it, e.g. `cupboard: Refrigerator`. |
 | **Shelf icons** | `src/icons.tsx` → `CATEGORY_ICONS` | Same as above, one per shelf. |
 | **Item icons** (the ones you pick when adding food) | `src/icons.tsx` → `ITEM_ICONS` | Add entries to offer more icons, or change the icon/label of one. Keep existing keys (e.g. `'milk'`): they're saved in the database. |
-| **Icons guessed from item names** | `src/data.ts` → `SUGGESTIONS` | e.g. `[['oat milk'], 'milk', 'dairy']` means "oat milk" gets the milk icon on the Dairy shelf. |
+| **Icons guessed from item names** | `src/data.ts` → `SUGGESTIONS` | e.g. `[['oat milk'], 'milk', 'dairy']` means "oat milk" gets the milk icon on the Dairy shelf. Keywords match whole words (plurals too); a longer phrase beats a shorter one, then the word nearest the end of the name wins. A name the kitchen already uses keeps its icon and shelf. Add tricky names to `scripts/test-suggest.mjs` and run `npm run test:suggest`. |
 | **Icon sizes** | `src/config.ts` → `ICON_SIZES` | Sizes in pixels for item cards, shelf headings, lists, tabs and buttons. |
 | **Shelf order and names** | `src/data.ts` → `CATEGORIES` | Top-to-bottom order of the cupboard; change `label` to rename a shelf. Adding a brand-new shelf also needs a database change, so ask Claude. |
 | **Shelf glass colours** | `THEME` block → `--shelf-spices`, `--shelf-dairy`, … | One colour per shelf. `--shelf-opacity` controls how see-through the glass is (100% = solid). The item cards on a shelf are tinted with the same colour. |
@@ -156,5 +156,6 @@ The grocery-run buttons show the shop names in their brand colours. To show logo
 npm run db:status # which migrations your live Supabase database has
 npm run check:catalog # scan-receipt's shelf/icon lists match the app's
 npm run test:db   # runs the migrations in an in-memory Postgres (PGlite) and checks flows + RLS
+npm run test:suggest  # checks the icon/shelf guesser against tricky names
 npm run build
 ```

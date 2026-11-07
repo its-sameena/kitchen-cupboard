@@ -6,6 +6,7 @@ export type CategoryId =
   | 'drinks'
   | 'baking'
   | 'coffee'
+  | 'cereals'
   | 'grains'
   | 'canned'
   | 'sauces'

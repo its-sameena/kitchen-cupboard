@@ -221,8 +221,10 @@ function GroceryRow({
 }
 
 function QuickAdd({ placeholder, buttonLabel }: { placeholder: string; buttonLabel: string }) {
+  const s = useKitchen()
   const [name, setName] = useState('')
-  const sug = suggestFor(name)
+  // Names the kitchen already uses keep their shelf and icon.
+  const sug = suggestFor(name, [...s.items, ...s.grocery])
   return (
     <form
       className="quick-add"

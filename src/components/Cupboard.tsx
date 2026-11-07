@@ -347,7 +347,7 @@ export function ItemForm({
   const [touchedIcon, setTouchedIcon] = useState(!!initial.icon)
   const [touchedCat, setTouchedCat] = useState(lockCategory || !!initial.icon)
 
-  const suggestion = suggestFor(name)
+  const suggestion = suggestFor(name, existing)
   const shownCatForIcon = touchedCat ? category : suggestion?.category ?? category
   const shownIcon = touchedIcon ? icon : suggestion?.icon ?? DEFAULT_ITEM_ICON[shownCatForIcon]
   const shownCat = touchedCat ? category : suggestion?.category ?? category

@@ -5,7 +5,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
 
 // Must match ITEM_ICONS (src/icons.tsx) and CATEGORIES (src/data.ts). `npm run check:catalog` verifies this.
 const ICONS = ["flask-round", "flame", "leaf", "milk", "egg", "drumstick", "beef", "ham", "fish", "shrimp", "snowflake", "ice-cream", "popsicle", "pizza", "wheat", "cake-slice", "cupcake", "candy", "cookie", "croissant", "sandwich", "coffee", "cup-soda", "glass-water", "beer", "wine", "bottle-wine", "martini", "can", "soup", "cooking-pot", "bean", "nut", "popcorn", "amphora", "droplet", "apple", "banana", "citrus", "cherry", "grape", "avocado", "carrot", "broccoli", "leafy-green", "salad", "sprout", "spray-can", "paper-bag", "package", "shopping-bag"]
-const CATEGORIES = ["spices", "baking", "coffee", "grains", "canned", "sauces", "snacks", "drinks", "produce", "dairy", "cold", "frozen", "other"]
+const CATEGORIES = ["spices", "baking", "coffee", "cereals", "grains", "canned", "sauces", "snacks", "drinks", "produce", "dairy", "cold", "frozen", "other"]
 
 // Tried in order; a model that's unavailable or out of free quota falls through to the next.
 const MODELS = [Deno.env.get('GEMINI_MODEL'), 'gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-3.8-flash', 'gemini-3.5-flash-lite']
@@ -27,7 +27,7 @@ Rules:
 - Expand abbreviations into plain, short product names a housemate would use, e.g. "GRWN SS MILK 4PT" -> "Milk", "SBY BTRMLK PANCKS" -> "Pancakes", "LIDL ORG BAN" -> "Bananas", "HNZ BKD BNS" -> "Baked beans". Drop brand names unless they are the product's common name. Use Title case only for the first word.
 - Skip anything that is not a product: prices, subtotals, totals, VAT, savings, discounts, multibuy lines, loyalty points (Clubcard, Nectar, Lidl Plus), carrier bags, bottle deposits, payment and card lines, store details.
 - Merge repeated lines and "2 x" / "@" quantity lines into one item with a quantity.
-- category must be one of: spices (Spices & Herbs), baking (Baking), coffee (Coffee & Tea), grains (Pasta, Rice & Grains), canned (Tins & Jars), sauces (Sauces & Oils), snacks (Snacks), drinks (Drinks), produce (Fruit & Veg), dairy (Dairy), cold (Fridge (cold stuff)), frozen (Freezer), other (Other).
+- category must be one of: spices (Spices & Herbs), baking (Baking), coffee (Coffee & Tea), cereals (Cereals: breakfast cereal, oats, porridge, granola), grains (Pasta, Rice & Grains), canned (Tins & Jars), sauces (Sauces & Oils), snacks (Snacks), drinks (Drinks), produce (Fruit & Veg), dairy (Dairy), cold (Fridge (cold stuff)), frozen (Freezer), other (Other).
 - icon must be the closest match from the allowed list.
 - confidence is "low" if the line was hard to read or you had to guess what the product is.
 - If the image is not a receipt or nothing is readable, return an empty items list.`

@@ -65,6 +65,12 @@ assert.equal((await as(OUT, `select * from members`)).length, 1, 'outsider only 
 await fails(OUT, `select add_item($1, 'Salt', 'flask-round', 'spices')`, [A], /Profile not found/)
 await fails(P1, `select add_item($1, 'Salt', 'flask-round', 'spices')`, [X], /Profile not found/)
 
+// Cereals shelf is a valid shelf; made-up shelves are not
+await as(P1, `select add_item($1, 'Granola', 'soup', 'cereals')`, [A])
+assert.equal((await one(P1, `select category from items where name = 'Granola'`)).category, 'cereals')
+await fails(P1, `select add_item($1, 'Thing', 'package', 'cupboard-top')`, [A], /items_category_check/)
+await as(P1, `delete from items where name = 'Granola'`)
+
 // Items, xN owners, dedupe by name
 await as(P1, `select add_item($1, 'Salt', 'flask-round', 'spices')`, [A])
 await as(P2, `select add_item($1, ' salt ', 'flask-round', 'spices')`, [S])
@@ -183,7 +189,9 @@ await old.exec(`
   insert into items (kitchen_id, name, emoji, category) values
     ('00000000-0000-4000-8000-0000000000aa', 'Salt', '🧂', 'spices'),
     ('00000000-0000-4000-8000-0000000000aa', 'Chilli', '🌶️', 'spices'),
-    ('00000000-0000-4000-8000-0000000000aa', 'Mystery', '🦄', 'other');
+    ('00000000-0000-4000-8000-0000000000aa', 'Mystery', '🦄', 'other'),
+    ('00000000-0000-4000-8000-0000000000aa', 'Porridge oats', '🥣', 'grains'),
+    ('00000000-0000-4000-8000-0000000000aa', 'Brown rice', '🍚', 'grains');
   insert into grocery (kitchen_id, name, emoji) values ('00000000-0000-4000-8000-0000000000aa', 'Soap', '🧻');
   insert into members (kitchen_id, name, color, joined_at) values
     ('00000000-0000-4000-8000-0000000000aa', 'First', '#e4572e', now() - interval '2 days'),
@@ -194,7 +202,13 @@ await old.exec(`
 `)
 await migrate(old, 1)
 const icons = Object.fromEntries((await old.query(`select name, emoji from items`)).rows.map((r) => [r.name, r.emoji]))
-assert.deepEqual(icons, { Salt: 'flask-round', Chilli: 'flame', Mystery: 'package' })
+assert.equal(icons.Salt, 'flask-round')
+assert.equal(icons.Chilli, 'flame')
+assert.equal(icons.Mystery, 'package')
+// Cereals shelf: obvious cereals move off "grains", everything else stays
+const shelves = Object.fromEntries((await old.query(`select name, category from items`)).rows.map((r) => [r.name, r.category]))
+assert.equal(shelves['Porridge oats'], 'cereals')
+assert.equal(shelves['Brown rice'], 'grains')
 assert.equal((await old.query(`select emoji from grocery`)).rows[0].emoji, 'spray-can')
 const cols = Object.fromEntries((await old.query(`select name, color from members`)).rows.map((r) => [r.name, r.color]))
 assert.equal(cols.First, '#e4572e', 'earliest profile keeps its colour')

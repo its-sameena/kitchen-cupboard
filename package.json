@@ -1,7 +1,7 @@
 {
   "name": "kitchen-cupboard",
   "private": true,
-  "version": "0.8.0",
+  "version": "0.9.0",
   "type": "module",
   "scripts": {
     "dev": "vite --host",
@@ -11,7 +11,8 @@
     "test:db": "node scripts/test-db.mjs",
     "feedback": "node scripts/feedback.mjs",
     "db:status": "node scripts/db-status.mjs",
-    "check:catalog": "node scripts/check-catalog.mjs"
+    "check:catalog": "node scripts/check-catalog.mjs",
+    "test:suggest": "node scripts/test-suggest.mjs"
   },
   "dependencies": {
     "@dicebear/core": "^10.7.0",
