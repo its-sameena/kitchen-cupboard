@@ -43,7 +43,7 @@ export const KEYWORD_RULES: KeywordRule[] = [
   { shelf: "coffee", icon: "milk", keywords: ["creamer", "coffee creamer"] },
 
   // cereals
-  { shelf: "cereals", icon: "cereal-box", keywords: ["cereal", "cereal box", "cornflakes", "corn flakes", "granola", "muesli", "bran flakes", "weetabix", "shreddies", "cheerios", "rice krispies", "coco pops", "frosties"] },
+  { shelf: "cereals", icon: "cereal-box", keywords: ["cereal", "cereal box", "cornflakes", "corn flakes", "granola", "muesli", "bran flakes", "weetabix", "shreddies", "cheerios", "rice krispies", "coco pops", "frosties", "chocos"] },
   { shelf: "cereals", icon: "wheat", keywords: ["oats", "porridge", "porridge oats", "rolled oats"] },
 
   // grains
