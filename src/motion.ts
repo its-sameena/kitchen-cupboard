@@ -1,5 +1,5 @@
 /**
- * Motion helpers. Durations live in CSS (src/styles.css → THEME → Motion);
+ * Motion helpers. Durations live in CSS (src/theme.css → Motion);
  * these let JavaScript wait for an animation to finish at the same speed.
  */
 

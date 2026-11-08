@@ -2,6 +2,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 import { readFileSync } from 'node:fs'
+// Dev-only tuning page for icons & keywords (npm run tune). Not part of the build.
+import tunePlugin from './tools/tune/plugin.mjs'
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8'))
 
@@ -9,6 +11,7 @@ export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(pkg.version) },
   plugins: [
     react(),
+    tunePlugin(),
     VitePWA({
       strategies: 'injectManifest',
       srcDir: 'src',

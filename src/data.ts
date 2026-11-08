@@ -1,3 +1,5 @@
+import { KEYWORD_RULES } from './catalog/keywords.ts'
+import type { KeywordRule } from './catalog/types.ts'
 import type { CategoryId } from './types'
 
 /** Shelves, top to bottom. Reorder to reorder the cupboard; icons are in src/icons.tsx. */
@@ -38,112 +40,22 @@ export const USER_COLORS = [
   '#6d4c41', // cocoa
 ]
 
-/**
- * Name → icon + shelf guesses. Each rule is [keywords, icon key, shelf].
- *
- * How a guess is made (see suggestFor):
- * - Keywords match whole words only, so "ice" doesn't match "rice" or "juice".
- *   A plural "s", "es" or "y" → "ies" is allowed ("tomato" matches "tomatoes").
- * - Multi-word keywords ("ice cream", "baked beans") beat single words.
- * - Otherwise the keyword nearest the end of the name wins, because the last
- *   word is usually the thing itself: "orange juice" is juice, "tomato sauce" is sauce.
- * - Still tied, an exact word beats a plural ("peppers" beats "pepper").
- * Rule order doesn't matter. Add tricky names to scripts/test-suggest.mjs.
- */
-const SUGGESTIONS: [string[], string, CategoryId][] = [
-  // Dairy
-  [['milk', 'oat milk', 'almond milk', 'soy milk', 'soya milk'], 'milk', 'dairy'],
-  [['cheese', 'cheddar', 'mozzarella', 'parmesan', 'feta', 'halloumi', 'brie', 'paneer'], 'milk', 'dairy'],
-  [['butter', 'margarine'], 'milk', 'dairy'],
-  [['yogurt', 'yoghurt', 'cream', 'creme fraiche', 'custard'], 'soup', 'dairy'],
-  // Fridge
-  [['egg'], 'egg', 'cold'],
-  [['chicken', 'turkey'], 'drumstick', 'cold'],
-  [['beef', 'steak', 'mince', 'lamb', 'pork', 'burger'], 'beef', 'cold'],
-  [['bacon', 'ham', 'sausage', 'chorizo', 'salami', 'pepperoni'], 'ham', 'cold'],
-  [['fish', 'salmon', 'cod', 'haddock', 'tuna steak'], 'fish', 'cold'],
-  [['prawn', 'shrimp'], 'shrimp', 'cold'],
-  [['tofu', 'hummus', 'houmous'], 'soup', 'cold'],
-  // Freezer
-  [['ice cream', 'gelato'], 'ice-cream', 'frozen'],
-  [['ice lolly', 'lolly', 'ice pop'], 'popsicle', 'frozen'],
-  [['frozen', 'ice', 'peas', 'fish fingers', 'oven chips', 'nuggets'], 'snowflake', 'frozen'],
-  [['pizza'], 'pizza', 'frozen'],
-  // Spices
-  [['salt', 'sea salt', 'salt and pepper', 'pepper', 'black pepper', 'white pepper', 'ground pepper'], 'salt', 'spices'],
-  [['peppercorns', 'pepper mill', 'peppermill', 'salt mill', 'grinder', 'spice mill', 'spice grinder'], 'spice-mill', 'spices'],
-  [['chilli', 'chili', 'chilli flakes', 'paprika', 'cayenne'], 'flame', 'spices'],
-  [['garlic powder', 'onion powder', 'cinnamon', 'cumin', 'turmeric', 'curry powder', 'garam masala', 'oregano',
-    'basil', 'thyme', 'rosemary', 'parsley', 'coriander', 'spice', 'mixed spice', 'herb', 'mixed herbs', 'nutmeg',
-    'ginger', 'bay leaves', 'stock cube', 'stock', 'gravy'], 'leaf', 'spices'],
-  // Baking
-  [['flour', 'self raising flour', 'plain flour', 'cornflour'], 'wheat', 'baking'],
-  [['sugar', 'icing sugar', 'brown sugar', 'caster sugar'], 'candy', 'baking'],
-  [['baking powder', 'baking soda', 'bicarb', 'bicarbonate of soda', 'yeast', 'vanilla', 'vanilla extract', 'cocoa',
-    'chocolate chips', 'sprinkles', 'food colouring'], 'cupcake', 'baking'],
-  [['honey', 'syrup', 'golden syrup', 'maple syrup'], 'amphora', 'baking'],
-  // Coffee & tea
-  [['coffee', 'espresso', 'coffee beans', 'instant coffee', 'hot chocolate'], 'coffee', 'coffee'],
-  [['tea', 'tea bags', 'green tea', 'peppermint tea', 'matcha', 'chai'], 'coffee', 'coffee'],
-  [['creamer', 'coffee creamer'], 'milk', 'coffee'],
-  // Cereals
-  [['cereal', 'cereal box', 'cornflakes', 'corn flakes', 'granola', 'muesli', 'bran flakes', 'weetabix', 'shreddies', 'cheerios',
-    'rice krispies', 'coco pops', 'frosties'], 'cereal-box', 'cereals'],
-  [['oats', 'porridge', 'porridge oats', 'rolled oats'], 'wheat', 'cereals'],
-  // Pasta, rice & grains
-  [['pasta', 'spaghetti', 'penne', 'fusilli', 'macaroni', 'lasagne', 'noodle', 'couscous', 'quinoa'], 'cooking-pot', 'grains'],
-  [['rice', 'basmati', 'risotto'], 'cooking-pot', 'grains'],
-  [['bread', 'loaf', 'bagel', 'wrap', 'tortilla', 'pitta', 'naan', 'crumpet', 'garlic bread'], 'sandwich', 'grains'],
-  [['croissant', 'pastry', 'pain au chocolat'], 'croissant', 'grains'],
-  // Tins & jars
-  [['beans', 'baked beans', 'kidney beans', 'black beans', 'butter beans', 'chickpea', 'lentil', 'tin', 'tinned',
-    'can of', 'canned', 'soup', 'chopped tomatoes', 'tinned tomatoes', 'tuna', 'sweetcorn', 'coconut milk'], 'can', 'canned'],
-  [['jam', 'marmalade', 'peanut butter', 'nutella', 'spread', 'chocolate spread'], 'amphora', 'canned'],
-  // Sauces & oils
-  [['oil', 'olive oil', 'vegetable oil', 'sunflower oil', 'olive'], 'droplet', 'sauces'],
-  [['ketchup', 'mayo', 'mayonnaise', 'mustard', 'sauce', 'vinegar', 'soy', 'sriracha', 'pesto', 'salsa', 'dressing',
-    'chutney', 'relish'], 'amphora', 'sauces'],
-  // Snacks
-  [['crisps', 'chips', 'tortilla chips', 'pringles'], 'popcorn', 'snacks'],
-  [['chocolate', 'chocolate bar'], 'candy', 'snacks'],
-  [['sweets', 'candy', 'candy cane', 'gummy'], 'candy', 'snacks'],
-  [['biscuit', 'cookie', 'digestives', 'crackers'], 'cookie', 'snacks'],
-  [['cake', 'brownie', 'muffin'], 'cake-slice', 'snacks'],
-  [['popcorn'], 'popcorn', 'snacks'],
-  [['nuts', 'almond', 'peanut', 'cashew', 'pecan', 'walnut', 'pistachio', 'hazelnut'], 'nut', 'snacks'],
-  // Drinks
-  [['juice', 'orange juice', 'apple juice', 'smoothie', 'squash', 'cordial'], 'cup-soda', 'drinks'],
-  [['beer', 'lager', 'ale', 'cider'], 'beer', 'drinks'],
-  [['wine', 'prosecco'], 'wine', 'drinks'],
-  [['vodka', 'gin', 'rum', 'whisky', 'whiskey', 'tequila'], 'martini', 'drinks'],
-  [['water', 'sparkling water'], 'glass-water', 'drinks'],
-  [['soda', 'cola', 'coke', 'lemonade', 'pop', 'fizzy', 'energy drink'], 'cup-soda', 'drinks'],
-  // Fruit & veg
-  [['apple'], 'apple', 'produce'],
-  [['banana'], 'banana', 'produce'],
-  [['lemon', 'lime', 'orange', 'satsuma', 'clementine', 'grapefruit'], 'citrus', 'produce'],
-  [['grape'], 'grape', 'produce'],
-  [['avocado'], 'avocado', 'produce'],
-  [['tomato', 'cherry tomatoes', 'vine tomatoes', 'plum tomatoes'], 'tomato', 'produce'],
-  [['berry', 'strawberry', 'blueberry', 'raspberry', 'cherry'], 'cherry', 'produce'],
-  [['onion', 'red onion', 'shallot'], 'onion', 'produce'],
-  [['spring onion', 'leek', 'celery'], 'leafy-green', 'produce'],
-  [['garlic', 'garlic bulb'], 'garlic', 'produce'],
-  [['potato', 'sweet potato'], 'bean', 'produce'],
-  [['carrot', 'parsnip'], 'carrot', 'produce'],
-  [['broccoli', 'cauliflower'], 'broccoli', 'produce'],
-  [['bell pepper', 'peppers', 'red pepper', 'green pepper', 'yellow pepper', 'sweet pepper'], 'bell-pepper', 'produce'],
-  [['mushroom', 'aubergine', 'eggplant', 'courgette', 'zucchini', 'cucumber'], 'sprout', 'produce'],
-  [['lettuce', 'spinach', 'salad', 'kale', 'cabbage', 'rocket'], 'leafy-green', 'produce'],
-  // Household
-  [['foil', 'tin foil', 'cling film', 'cling', 'bin bags', 'sponge', 'soap', 'washing up liquid', 'kitchen roll',
-    'paper towel', 'toilet roll', 'bleach', 'detergent'], 'spray-can', 'other'],
-]
+// ───────────────────────── name → icon + shelf guesses ─────────────────────────
+// The keyword list lives in src/catalog/keywords.ts (tune it with `npm run tune`).
+// How a guess is made (details: docs/icons-and-keywords.md):
+// 1. A name the kitchen already uses keeps its icon and shelf.
+// 2. Keywords match whole words only, so "ice" doesn't match "rice" or "juice".
+//    A plural "s", "es" or "y" → "ies" is allowed ("tomato" matches "tomatoes").
+// 3. Multi-word keywords ("ice cream", "baked beans") beat single words.
+// 4. Otherwise the keyword nearest the end of the name wins, because the last
+//    word is usually the thing itself: "orange juice" is juice, "tomato sauce" is sauce.
+// 5. Still tied, an exact word beats a plural ("peppers" beats "pepper").
 
-/** Lower case, no punctuation, single spaces: "Ben & Jerry's  Ice-cream" → "ben jerry s ice cream". */
-const words = (s: string) => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim()
+/** Lower case, no accents or punctuation, single spaces: "Ben & Jerry's Ice-cream" → "ben jerry s ice cream". */
+export const words = (s: string) =>
+  s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim()
 
-/** Does `word` (from the name) match `key` (a single keyword word), allowing plurals? */
+/** Does `word` (from the name) match `key` (one word of a keyword), allowing plurals? */
 function sameWord(word: string, key: string) {
   if (word === key) return true
   if (key.length < 3) return false
@@ -153,10 +65,7 @@ function sameWord(word: string, key: string) {
   return false
 }
 
-/**
- * Where `key` appears in `name` as whole words: the index of its last word
- * (-1 if absent) and whether it matched exactly (not as a plural).
- */
+/** Where `key` appears in `name` as whole words: index of its last word (-1 if absent), and exact or plural. */
 function findPhrase(name: string[], key: string[]) {
   let found = { end: -1, exact: false }
   for (let i = 0; i + key.length <= name.length; i++) {
@@ -173,35 +82,59 @@ function beats(a: number[], b: number[]) {
   return i >= 0 && a[i] > b[i]
 }
 
-const RULES = SUGGESTIONS.flatMap(([keys, icon, category]) => keys.map((k) => ({ key: words(k).split(' '), icon, category })))
-
 export interface Suggestion {
   icon: string
   category: CategoryId
 }
+
+/** One keyword that matched a name, with its score [words in keyword, position of last word, exact]. */
+export interface KeywordMatch extends Suggestion {
+  keyword: string
+  score: number[]
+  /** Index of the rule in the rules list. */
+  rule: number
+}
+
+const split = new WeakMap<readonly KeywordRule[], { key: string[]; keyword: string; rule: number; icon: string; category: CategoryId }[]>()
+function prepared(rules: readonly KeywordRule[]) {
+  let r = split.get(rules)
+  if (!r) {
+    r = rules.flatMap((rule, i) =>
+      rule.keywords.map((k) => ({ key: words(k).split(' '), keyword: k, rule: i, icon: rule.icon, category: rule.shelf })),
+    )
+    split.set(rules, r)
+  }
+  return r
+}
+
+/** Every keyword that matches `name`, best first. The first one is the guess. */
+export function explainFor(name: string, rules: readonly KeywordRule[] = KEYWORD_RULES): KeywordMatch[] {
+  const n = words(name)
+  if (!n) return []
+  const nameWords = n.split(' ')
+  const out: KeywordMatch[] = []
+  for (const r of prepared(rules)) {
+    if (!r.key[0]) continue
+    const { end, exact } = findPhrase(nameWords, r.key)
+    if (end >= 0) out.push({ keyword: r.keyword, rule: r.rule, icon: r.icon, category: r.category, score: [r.key.length, end, exact ? 1 : 0] })
+  }
+  return out.sort((a, b) => (beats(a.score, b.score) ? -1 : beats(b.score, a.score) ? 1 : 0))
+}
+
+type Known = { name: string; icon: string; category: CategoryId }
 
 /**
  * Guess an icon and shelf from an item name. `known` is what the kitchen already
  * uses (cupboard items, grocery list): an exact name match there wins, so a
  * housemate's correction sticks for everyone.
  */
-export function suggestFor(name: string, known: readonly { name: string; icon: string; category: CategoryId }[] = []): Suggestion | null {
+export function suggestFor(name: string, known: readonly Known[] = [], rules: readonly KeywordRule[] = KEYWORD_RULES): Suggestion | null {
   const n = words(name)
   if (!n) return null
   const same = known.find((k) => words(k.name) === n)
   if (same) return { icon: same.icon, category: same.category }
-
-  const nameWords = n.split(' ')
-  // Score = [words in keyword, position of its last word, exact]; compared in that order.
-  let best: { score: number[]; icon: string; category: CategoryId } | null = null
-  for (const r of RULES) {
-    const { end, exact } = findPhrase(nameWords, r.key)
-    if (end < 0) continue
-    const score = [r.key.length, end, exact ? 1 : 0]
-    const better = !best || beats(score, best.score)
-    if (better) best = { score, icon: r.icon, category: r.category }
-  }
-  return best && { icon: best.icon, category: best.category }
+  const best = explainFor(name, rules)[0]
+  return best ? { icon: best.icon, category: best.category } : null
 }
 
 // ───────────────────────── colour picker palette ─────────────────────────

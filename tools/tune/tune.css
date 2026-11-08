@@ -1,0 +1,102 @@
+/* Tuning page only (dev). Uses the app's THEME tokens from src/theme.css. */
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); font-family: var(--font-body); color: var(--ink); -webkit-font-smoothing: antialiased; }
+.tune a { color: inherit; }
+.tune { max-width: 1180px; margin: 0 auto; padding: 20px 16px 80px; color: var(--ink); }
+.tune h1 { font-family: var(--font-display); font-weight: 400; font-size: 34px; margin: 0; }
+.tune h3 { margin: 22px 0 8px; font-size: 15px; display: flex; align-items: center; gap: 10px; }
+.tune header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+.tune nav { display: flex; gap: 6px; margin: 18px 0; flex-wrap: wrap; }
+.tune nav button, .tune .seg button {
+  border: 0; background: var(--surface-2); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 500; cursor: pointer;
+}
+.tune nav button.on, .tune .seg button.on { background: var(--accent); color: var(--accent-ink); }
+.tune .seg { display: flex; gap: 6px; margin-bottom: 12px; }
+.tune .muted { color: var(--muted); }
+.tune .small { font-size: 12px; }
+.tune .row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 8px 0; }
+.tune .grow { flex: 1; min-width: 180px; }
+.tune label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); margin: 8px 0; }
+.tune label.check { flex-direction: row; align-items: center; color: var(--ink); font-size: 13px; }
+.tune input:not([type=checkbox]), .tune select, .tune textarea {
+  font: inherit; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 10px; padding: 8px 10px;
+}
+.tune textarea { font-family: var(--font-mono); font-size: 12px; line-height: 1.5; resize: vertical; }
+.tune input.big { font-size: 20px; padding: 12px 14px; width: 100%; box-sizing: border-box; }
+.tune .btn { border: 0; background: var(--surface-2); color: var(--ink); padding: 8px 14px; border-radius: 10px; font: inherit; font-weight: 600; font-size: 13px; cursor: pointer; }
+.tune .btn-primary { background: var(--accent); color: var(--accent-ink); }
+.tune .btn:disabled { opacity: .4; cursor: default; }
+.tune .btn.danger, .tune .link.danger { color: var(--danger); }
+.tune .link { border: 0; background: none; color: var(--muted); text-decoration: underline; cursor: pointer; font: inherit; font-size: 12px; padding: 0; }
+.tune .pill { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); }
+.tune .pill.ok { background: color-mix(in srgb, var(--success) 18%, transparent); color: var(--success); }
+.tune .pill.warn { background: color-mix(in srgb, var(--run) 18%, transparent); color: #b5461f; }
+.tune .ok-text { color: var(--success); }
+.tune .warn-text { color: #b5461f; display: block; }
+.tune .status { background: var(--surface); border-radius: 10px; padding: 10px 14px; font-size: 13px; }
+.tune code { font-family: var(--font-mono); font-size: 12px; }
+
+.tune .guess { display: flex; align-items: center; gap: 14px; margin: 14px 0; }
+.tune .guess-tile {
+  width: 72px; height: 72px; border-radius: 18px; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--shelf) 35%, var(--surface));
+}
+.tune table { border-collapse: collapse; width: 100%; font-size: 13px; }
+.tune td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.tune td svg { vertical-align: middle; }
+.tune tr.win td { font-weight: 600; background: var(--surface); }
+.tune tr.fail td { color: #b5461f; }
+
+.tune .shelf-group { border-left: 4px solid var(--shelf); padding-left: 12px; margin: 10px 0 18px; }
+.tune .rule { display: flex; align-items: flex-start; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.tune .chips { display: flex; flex-wrap: wrap; gap: 4px; flex: 1; }
+.tune .chip { background: var(--surface); border-radius: 999px; padding: 3px 4px 3px 10px; font-size: 13px; display: inline-flex; align-items: center; gap: 2px; }
+.tune .chip.dupe { outline: 2px solid var(--run); }
+.tune .chip button { border: 0; background: none; cursor: pointer; color: var(--muted); font-size: 14px; }
+.tune .chip-input { width: 130px; padding: 3px 8px !important; border-radius: 999px !important; font-size: 13px !important; }
+
+.tune .picker { position: relative; }
+.tune .icon-btn { width: 38px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; display: grid; place-items: center; color: var(--ink); }
+.tune .picker-pop {
+  position: absolute; z-index: 10; top: 38px; left: 0; width: 320px; background: var(--surface); border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.18); padding: 10px;
+}
+.tune .picker-pop input { width: 100%; box-sizing: border-box; margin-bottom: 8px; }
+.tune .picker-grid, .tune .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 4px; max-height: 260px; overflow: auto; }
+.tune .picker-grid button, .tune .lib-grid button {
+  border: 0; background: var(--bg); border-radius: 8px; height: 40px; cursor: pointer; display: grid; place-items: center; color: var(--ink); position: relative;
+}
+.tune .picker-grid button.on, .tune .lib-grid button.on { outline: 2px solid var(--accent); }
+.tune .lib-grid { grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); max-height: 300px; }
+.tune .lib-grid button { height: 52px; align-content: center; gap: 2px; }
+.tune .src { font-size: 9px; color: var(--muted); }
+.tune .src.tabler { color: #2e86de; }
+.tune .src.lucide-lab { color: #9b59b6; }
+
+.tune .icons-tab { display: grid; grid-template-columns: 1fr 380px; gap: 20px; align-items: start; }
+@media (max-width: 860px) { .tune .icons-tab { grid-template-columns: 1fr; } }
+.tune .icon-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.tune .tile {
+  border: 0; background: var(--surface); border-radius: 14px; padding: 10px 4px; cursor: pointer; display: flex; flex-direction: column;
+  align-items: center; gap: 4px; font: inherit; font-size: 12px; color: var(--ink);
+}
+.tune .tile code { font-size: 10px; color: var(--muted); }
+.tune .tile.on { outline: 2px solid var(--accent); }
+.tune aside { position: sticky; top: 12px; }
+.tune .panel { background: var(--surface); border-radius: 16px; padding: 14px; }
+.tune .panel h3 { margin-top: 0; }
+.tune .panel input, .tune .panel textarea { width: 100%; box-sizing: border-box; }
+.tune .preview { display: flex; flex-direction: column; align-items: center; gap: 10px; margin: 10px 0; }
+.tune .grid24 {
+  width: 240px; height: 240px; border-radius: 8px; background-color: var(--bg);
+  background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 10px 10px;
+  box-shadow: inset 0 0 0 20px color-mix(in srgb, var(--danger) 6%, transparent); /* outer 2 units: keep shapes out */
+}
+.tune .sizes { display: flex; align-items: center; gap: 14px; }
+.tune .card-demo { width: 64px; height: 64px; border-radius: 16px; background: color-mix(in srgb, var(--shelf-produce) 30%, var(--surface)); display: grid; place-items: center; border: 1px solid var(--line); }
+.tune .card-demo.dim { opacity: .75; }
+.tune .missing { color: var(--danger); font-weight: 700; }
+.tune .report { background: var(--surface); border-radius: 14px; padding: 12px 14px; margin: 8px 0; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.tune .report svg { vertical-align: middle; }

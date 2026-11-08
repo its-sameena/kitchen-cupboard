@@ -58,6 +58,7 @@ if (cmd === 'set') {
       console.log(`From ${f.member_name} (${f.kitchens?.name ?? 'kitchen'}) on ${new Date(f.created_at).toLocaleString()}`)
       console.log(`Context: screen=${c.screen ?? '?'} version=${c.version ?? '?'} viewport=${c.viewport ?? '?'} installed=${c.standalone ?? '?'}`)
       if (c.userAgent) console.log(`Device: ${c.userAgent}`)
+      if (c.iconGuess) console.log(`Icon guess report: open \`npm run tune\` → Reports to fix "${c.iconGuess.name}"`)
       console.log(`\n> ${f.message.replace(/\n/g, '\n> ')}\n`)
       if (f.reply) console.log(`Reply: ${f.reply}\n`)
     }

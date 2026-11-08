@@ -1,20 +1,18 @@
 /**
  * Every icon in the app lives here, so the look can be changed in one place.
  * Icons come from Lucide (https://lucide.dev/icons). To swap one, import a
- * different icon from 'lucide-react' and change the mapping below. A few food
- * icons Lucide lacks (Tabler, Lucide Lab, or drawn by hand) are in src/extra-icons.ts.
+ * different icon from 'lucide-react' and change the mapping below. Item icons
+ * (the food ones) are data in src/catalog/item-icons.ts: see docs/icons-and-keywords.md.
  */
-import type { LucideIcon, LucideProps } from 'lucide-react'
+import { createLucideIcon, type IconNode, type LucideIcon, type LucideProps } from 'lucide-react'
 import {
-  Amphora, Apple, ArrowLeft, ArrowLeftRight, Avocado, Banana, Bean, Beef, Beer, Bell, BellRing, BottleWine,
-  Broccoli, Bug, CakeSlice, Can, Candy, Carrot, Check, Cherry, ChevronRight, Citrus, Coffee, Cookie, CookingPot,
-  CornerDownRight, Croissant, CupSoda, Cupcake, Droplet, Drumstick, Egg, Fish, Flame, FlaskRound, GlassWater,
-  Grape, Ham, Heart, House, IceCreamCone, Leaf, LeafyGreen, Lightbulb, Martini, MessageCircle, MessageSquare,
-  Milk, Nut, Package, PaperBag, Pencil, Pizza, Plus, Popcorn, Popsicle, Refrigerator, Salad, Sandwich, Search,
-  Share2, ShoppingBag, ShoppingBasket, ShoppingCart, Shrimp, Smartphone, Snowflake, Soup, SprayCan, Sprout,
-  Store, Trash2, ChevronLeft, Clipboard, ClipboardCheck, Shuffle, Camera, ReceiptText, TriangleAlert, Unplug, Wheat, Wine, WifiOff, X, Archive, ClipboardList,
+  Archive, ArrowLeft, ArrowLeftRight, Bell, BellRing, Bug, Camera, Can, Carrot, Check, ChevronLeft,
+  ChevronRight, Clipboard, ClipboardCheck, ClipboardList, Coffee, Cookie, CookingPot, CornerDownRight,
+  CupSoda, Droplet, Heart, House, Leaf, Lightbulb, MessageCircle, MessageSquare, Milk, Package, Pencil, Plus,
+  ReceiptText, Refrigerator, Search, Share2, ShoppingBag, ShoppingBasket, ShoppingCart, Shuffle, Smartphone,
+  Snowflake, Sprout, Store, Trash2, TriangleAlert, Unplug, Wheat, WifiOff, X,
 } from 'lucide-react'
-import { BellPepper, CerealBox, Garlic, Onion, SaltShaker, SpiceMill, Tomato } from './extra-icons'
+import { ITEM_ICON_DATA } from './catalog/item-icons.ts'
 import type { CategoryId, EventType, FeedbackKind } from './types'
 
 // ───────────────────────── interface icons ─────────────────────────
@@ -75,11 +73,18 @@ export const EVENT_ICONS: Record<EventType, LucideIcon> = {
 
 // ───────────────────────── shelves ─────────────────────────
 
+/** An item icon from src/catalog/item-icons.ts as a Lucide-style component (box if the key is unknown). */
+function catalogIcon(key: string): LucideIcon {
+  const data = ITEM_ICON_DATA[key]
+  if (!data) return Package
+  return createLucideIcon(key, data.node.map(([tag, attrs], i) => [tag, { ...attrs, key: String(i) }]) as IconNode)
+}
+
 export const CATEGORY_ICONS: Record<CategoryId, LucideIcon> = {
   spices: Leaf,
   baking: Wheat,
   coffee: Coffee,
-  cereals: CerealBox,
+  cereals: catalogIcon('cereal-box'),
   grains: CookingPot,
   canned: Can,
   sauces: Droplet,
@@ -113,69 +118,12 @@ export const DEFAULT_ITEM_ICON: Record<CategoryId, string> = {
 }
 
 /**
- * Icons housemates can pick for cupboard items. The key is what gets saved in
- * the database, so keep existing keys when changing the icon they point to.
+ * Icons housemates can pick for cupboard items, built from src/catalog/item-icons.ts
+ * (add or change them with `npm run tune`). The key is what gets saved in the database.
  */
-export const ITEM_ICONS: Record<string, { icon: LucideIcon; label: string }> = {
-  'flask-round': { icon: FlaskRound, label: 'Spice jar' },
-  salt: { icon: SaltShaker, label: 'Salt / pepper' },
-  'spice-mill': { icon: SpiceMill, label: 'Spice mill' },
-  flame: { icon: Flame, label: 'Chilli / hot' },
-  leaf: { icon: Leaf, label: 'Herbs' },
-  milk: { icon: Milk, label: 'Milk' },
-  egg: { icon: Egg, label: 'Eggs' },
-  drumstick: { icon: Drumstick, label: 'Chicken' },
-  beef: { icon: Beef, label: 'Meat' },
-  ham: { icon: Ham, label: 'Ham' },
-  fish: { icon: Fish, label: 'Fish' },
-  shrimp: { icon: Shrimp, label: 'Seafood' },
-  snowflake: { icon: Snowflake, label: 'Frozen' },
-  'ice-cream': { icon: IceCreamCone, label: 'Ice cream' },
-  popsicle: { icon: Popsicle, label: 'Ice lolly' },
-  pizza: { icon: Pizza, label: 'Pizza' },
-  wheat: { icon: Wheat, label: 'Flour / grain' },
-  'cake-slice': { icon: CakeSlice, label: 'Cake' },
-  cupcake: { icon: Cupcake, label: 'Baking' },
-  candy: { icon: Candy, label: 'Sweets' },
-  cookie: { icon: Cookie, label: 'Biscuits' },
-  croissant: { icon: Croissant, label: 'Pastry' },
-  sandwich: { icon: Sandwich, label: 'Bread' },
-  coffee: { icon: Coffee, label: 'Coffee / tea' },
-  'cup-soda': { icon: CupSoda, label: 'Soft drink' },
-  'glass-water': { icon: GlassWater, label: 'Water' },
-  beer: { icon: Beer, label: 'Beer' },
-  wine: { icon: Wine, label: 'Wine' },
-  'bottle-wine': { icon: BottleWine, label: 'Bottle' },
-  martini: { icon: Martini, label: 'Spirits' },
-  can: { icon: Can, label: 'Tin' },
-  soup: { icon: Soup, label: 'Bowl' },
-  'cereal-box': { icon: CerealBox, label: 'Cereal' },
-  'cooking-pot': { icon: CookingPot, label: 'Pasta / rice' },
-  bean: { icon: Bean, label: 'Beans' },
-  nut: { icon: Nut, label: 'Nuts' },
-  popcorn: { icon: Popcorn, label: 'Snacks' },
-  amphora: { icon: Amphora, label: 'Jar' },
-  droplet: { icon: Droplet, label: 'Oil / sauce' },
-  apple: { icon: Apple, label: 'Apple' },
-  banana: { icon: Banana, label: 'Banana' },
-  citrus: { icon: Citrus, label: 'Citrus' },
-  cherry: { icon: Cherry, label: 'Berries' },
-  grape: { icon: Grape, label: 'Grapes' },
-  avocado: { icon: Avocado, label: 'Avocado' },
-  tomato: { icon: Tomato, label: 'Tomato' },
-  onion: { icon: Onion, label: 'Onion' },
-  garlic: { icon: Garlic, label: 'Garlic' },
-  'bell-pepper': { icon: BellPepper, label: 'Pepper (veg)' },
-  carrot: { icon: Carrot, label: 'Carrot' },
-  broccoli: { icon: Broccoli, label: 'Broccoli' },
-  'leafy-green': { icon: LeafyGreen, label: 'Greens' },
-  salad: { icon: Salad, label: 'Salad' },
-  sprout: { icon: Sprout, label: 'Mushroom / veg' },
-  'spray-can': { icon: SprayCan, label: 'Cleaning' },
-  'paper-bag': { icon: PaperBag, label: 'Bag' },
-  package: { icon: Package, label: 'Other' },
-  'shopping-bag': { icon: ShoppingBag, label: 'Shopping' },
-}
+export const ITEM_ICONS: Record<string, { icon: LucideIcon; label: string }> = Object.fromEntries(
+  Object.entries(ITEM_ICON_DATA).map(([key, { label }]) => [key, { label, icon: catalogIcon(key) }]),
+)
 
 /** Renders an item's icon by key; unknown keys fall back to a box. */
 export function ItemIcon({ name, ...props }: { name: string } & LucideProps) {

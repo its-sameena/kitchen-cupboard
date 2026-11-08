@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ICON_SIZES } from '../config'
+import { ICON_SIZES, SHELF_ITEM_ORDER } from '../config'
 import { CATEGORIES, categoryById, suggestFor } from '../data'
 import { CATEGORY_ICONS, DEFAULT_ITEM_ICON, ITEM_ICONS, ItemIcon, UI } from '../icons'
 import {
@@ -11,6 +11,7 @@ import {
   haveItToo,
   ranOut,
   requestEntry,
+  submitFeedback,
   updateItem,
   useKitchen,
   useMe,
@@ -45,7 +46,7 @@ export default function Cupboard() {
         ...c,
         items: s.items
           .filter((i) => i.category === c.id && (!q || i.name.toLowerCase().includes(q)))
-          .sort((a, b) => (b.owners.length > 0 ? 1 : 0) - (a.owners.length > 0 ? 1 : 0) || a.name.localeCompare(b.name)),
+          .sort(SHELF_ITEM_ORDER),
       })),
     [s.items, q],
   )
@@ -346,6 +347,9 @@ export function ItemForm({
   const [category, setCategory] = useState<CategoryId>(initial.category)
   const [touchedIcon, setTouchedIcon] = useState(!!initial.icon)
   const [touchedCat, setTouchedCat] = useState(lockCategory || !!initial.icon)
+  /** Did the user pick an icon or shelf in this form? Then they may report the guess as wrong. */
+  const [picked, setPicked] = useState(false)
+  const [reported, setReported] = useState<'no' | 'sending' | 'yes'>('no')
 
   const suggestion = suggestFor(name, existing)
   const shownCatForIcon = touchedCat ? category : suggestion?.category ?? category
@@ -407,6 +411,7 @@ export function ItemForm({
                   onClick={() => {
                     setCategory(c.id)
                     setTouchedCat(true)
+                    setPicked(true)
                   }}
                 >
                   <ShelfIcon id={c.id} /> {c.label}
@@ -429,6 +434,7 @@ export function ItemForm({
                   onClick={() => {
                     setIcon(key)
                     setTouchedIcon(true)
+                    setPicked(true)
                   }}
                 >
                   <Icon size={ICON_SIZES.list} strokeWidth={1.6} />
@@ -436,6 +442,15 @@ export function ItemForm({
               ))}
             </div>
           </details>
+          {picked && name.trim() && (suggestion?.icon !== shownIcon || suggestion?.category !== shownCat) && (
+            <ReportGuess
+              name={name.trim()}
+              guessed={suggestion}
+              chosen={{ icon: shownIcon, category: shownCat }}
+              state={reported}
+              setState={setReported}
+            />
+          )}
         </>
       )}
 
@@ -448,6 +463,52 @@ export function ItemForm({
         </button>
       )}
     </form>
+  )
+}
+
+/**
+ * "The app guessed this wrong": sends a feedback item with the name, the guess and
+ * the housemate's pick. The developer sees these in the tuning page (npm run tune → Reports).
+ */
+function ReportGuess({
+  name,
+  guessed,
+  chosen,
+  state,
+  setState,
+}: {
+  name: string
+  guessed: { icon: string; category: CategoryId } | null
+  chosen: { icon: string; category: CategoryId }
+  state: 'no' | 'sending' | 'yes'
+  setState: (s: 'no' | 'sending' | 'yes') => void
+}) {
+  const describe = (g: { icon: string; category: CategoryId }) => `${categoryById(g.category).label} / ${ITEM_ICONS[g.icon]?.label ?? g.icon}`
+  if (state === 'yes') return <p className="muted small report-guess">Thanks, reported. The guess will be fixed in an update.</p>
+  return (
+    <button
+      type="button"
+      className="link small report-guess"
+      disabled={state === 'sending'}
+      onClick={async () => {
+        setState('sending')
+        try {
+          await submitFeedback('bug', `Wrong icon guess for “${name}”: guessed ${guessed ? describe(guessed) : 'nothing'}, should be ${describe(chosen)}.`, {
+            screen: 'add-item',
+            version: __APP_VERSION__,
+            userAgent: navigator.userAgent,
+            viewport: `${window.innerWidth}x${window.innerHeight}`,
+            standalone: window.matchMedia('(display-mode: standalone)').matches,
+            iconGuess: { name, guessed, chosen },
+          })
+          setState('yes')
+        } catch {
+          setState('no')
+        }
+      }}
+    >
+      {state === 'sending' ? 'Sending…' : 'Report wrong guess'}
+    </button>
   )
 }
 

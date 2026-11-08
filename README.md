@@ -2,6 +2,16 @@
 
 A phone-first PWA for a shared kitchen: see who has what on glass shelves in a shared cupboard, ask whoever's at the shops to pick things up, and keep a shared grocery list. Backed by Supabase (anonymous device auth, Postgres, realtime) with Web Push notifications. No passwords: each phone joins the kitchen once, then you pick your profile.
 
+## Guides
+
+| Guide | For when you want to… |
+| --- | --- |
+| [Customising the app](docs/customising.md) | change colours, fonts, sizes, the order of tabs/shelves/items/shops, text, screen layout, shop logos |
+| [Icons and keywords](docs/icons-and-keywords.md) | fix the icon/shelf guessed from a name, add icons from Lucide/Tabler, draw your own (`npm run tune`) |
+| [Animations](docs/animations.md) | make motion faster, slower, bouncier, or change a single animation |
+| [Shipping updates safely](docs/shipping.md) | test on a preview, change the database without losing data, deploy functions, roll back |
+| [Working with Claude](docs/working-with-claude.md) | turn an idea into the app quickly, and spend fewer tokens doing it |
+
 ## One-time setup (≈10 minutes)
 
 ### 1. Create the Supabase project
@@ -13,7 +23,7 @@ A phone-first PWA for a shared kitchen: see who has what on glass shelves in a s
    ```
    VITE_SUPABASE_URL=https://xxxx.supabase.co   # just the project URL, no /rest/v1/
    VITE_SUPABASE_ANON_KEY=eyJ...          # anon / publishable key
-   SUPABASE_SERVICE_ROLE_KEY=eyJ...       # service_role key: only for `npm run feedback`, never shipped
+   SUPABASE_SERVICE_ROLE_KEY=eyJ...       # service_role key: for `npm run feedback` and the tuning page's Reports; never shipped
    ```
    (`VITE_VAPID_PUBLIC_KEY` is already filled in.)
 
@@ -55,7 +65,7 @@ npx vercel env add VITE_VAPID_PUBLIC_KEY production
 npx vercel --prod                                 # prints your https://….vercel.app URL
 ```
 Paste each value from `.env.local` when asked. Never add `SUPABASE_SERVICE_ROLE_KEY` to Vercel.
-To ship an update later, run `npx vercel --prod` again. Open phones pick it up on their next launch.
+The project is connected to GitHub, so pushing to `main` deploys the live site and every other branch gets a preview URL. See [Shipping updates safely](docs/shipping.md). Open phones pick up a new version on their next launch.
 
 Note: free Supabase projects pause after about a week with no activity. Daily use keeps yours awake; if it does pause, click **Restore** in the dashboard.
 
@@ -92,57 +102,6 @@ npm run feedback -- --all        # everything
 npm run feedback -- set <id> done "Fixed in v0.3 – thanks!"   # status + reply shown in the app
 ```
 
-## Customising the look
-
-Run `npm run dev` and keep the app open while you edit: changes appear instantly. To see it at phone size on a computer, open the browser's developer tools and switch on the device toolbar (Chrome: ⌘⇧M).
-Or just describe what you want to Claude Code, e.g. *"make the buttons navy and use the Nunito font"*.
-
-| What you want to change | Where | How |
-| --- | --- | --- |
-| **Colour scheme** | `src/styles.css`, the `THEME` block at the top | Every colour is a variable: `--bg` (page background), `--surface` (cards, sheets, tab bar), `--surface-2` (chips, inputs), `--ink` (text), `--muted`, `--accent` (black buttons and the *Add item* pill), `--run` (grocery-run orange), `--danger`, `--success`. Change a value and the whole app follows. |
-| **Fonts** | `index.html` + the `THEME` block | The app uses **Inter** for text and **Instrument Serif** for the big page titles. To change them, pick fonts on [Google Fonts](https://fonts.google.com), replace the `<link>` in `index.html`, then set `--font-body` and `--font-display`, e.g. `--font-display: 'Playfair Display', serif;`. |
-| **Order of pages (tabs)** | `src/config.ts` → `TABS` | The tab bar shows them left to right in array order: move a line to move a tab. `label` is the tab text, `title` the subtitle in the top bar. `DEFAULT_TAB` is the page the app opens on. |
-| **Interface icons** (tabs, buttons, top bar, empty states) | `src/icons.tsx` → `UI` | Find an icon on [lucide.dev/icons](https://lucide.dev/icons), add its name (PascalCase, e.g. `ShoppingBasket`) to the `import` list, and point the entry at it, e.g. `cupboard: Refrigerator`. |
-| **Shelf icons** | `src/icons.tsx` → `CATEGORY_ICONS` | Same as above, one per shelf. |
-| **Item icons** (the ones you pick when adding food) | `src/icons.tsx` → `ITEM_ICONS` | Add entries to offer more icons, or change the icon/label of one. Keep existing keys (e.g. `'milk'`): they're saved in the database. After adding a key, run `npm run check:catalog` and copy it into `supabase/functions/scan-receipt/index.ts`. |
-| **Extra food icons** (not in Lucide) | `src/extra-icons.ts` | Icons from [Tabler](https://tabler.io/icons) (`import { IconCheese } from '@tabler/icons-react'`, wrap with `fromTabler`), [Lucide Lab](https://github.com/lucide-icons/lucide-lab) (`createLucideIcon('name', iconData)`), or drawn by hand as 24×24 stroke paths (tomato, spice mill, cereal box). Then add them to `ITEM_ICONS`. |
-| **Icons guessed from item names** | `src/data.ts` → `SUGGESTIONS` | e.g. `[['oat milk'], 'milk', 'dairy']` means "oat milk" gets the milk icon on the Dairy shelf. Keywords match whole words (plurals too); a longer phrase beats a shorter one, then the word nearest the end of the name wins. A name the kitchen already uses keeps its icon and shelf. Add tricky names to `scripts/test-suggest.mjs` and run `npm run test:suggest`. |
-| **Icon sizes** | `src/config.ts` → `ICON_SIZES` | Sizes in pixels for item cards, shelf headings, lists, tabs and buttons. |
-| **Shelf order and names** | `src/data.ts` → `CATEGORIES` | Top-to-bottom order of the cupboard; change `label` to rename a shelf. Adding a brand-new shelf also needs a database change, so ask Claude. |
-| **Shelf glass colours** | `THEME` block → `--shelf-spices`, `--shelf-dairy`, … | One colour per shelf. `--shelf-opacity` controls how see-through the glass is (100% = solid). The item cards on a shelf are tinted with the same colour. |
-| **Profile colours** | `src/data.ts` → `PROFILE_PALETTE`, `USER_COLORS` | The pop-up colour grid is generated from `PALETTE_HUES` (one per column) and `PALETTE_LIGHTNESS` (one per row). `USER_COLORS` are the colours a new profile is offered first. Two housemates can never share a colour (the database enforces it). |
-| **Avatars** | `src/avatar.ts`, `src/components/AvatarCreator.tsx` | Avatars use DiceBear's free (CC0) **sprouts** style: potted plants with faces. The parts and colours on offer are read from the style itself; the tabs and labels are in `AvatarCreator.tsx`. The avatar's background is always the profile's highlight colour. |
-| **Shops for grocery runs** | `src/config.ts` → `STORES` | Each shop's name, button border colour and optional logo. Add, remove or reorder entries freely. |
-| **Roundness, shadows, card size** | `THEME` block | `--radius` (cards and sheets), `--radius-sm` (item cards, inputs), `--shadow`, and `--card-w` / `--card-h` (size of the item cards on the shelves). |
-| **App name, home-screen icon, status-bar colour** | `vite.config.ts` (`manifest`), `index.html` (`<title>`, `theme-color`), `public/favicon.svg` | After editing `favicon.svg`, run `npm run icons` to regenerate the PNG app icons. |
-| **Layout of a screen** | `src/components/` | `Cupboard.tsx`, `Groceries.tsx`, `House.tsx`, `Welcome.tsx` (setup + profile picker), `Feedback.tsx`; the tab bar and top bar are in `src/App.tsx`. Styles for each are in labelled sections of `src/styles.css`. |
-
-After changing the look, phones get it on their next launch once the app is redeployed.
-
-### Animations
-
-All motion is CSS, with timings taken from the Claude Design prototype.
-
-| What you want to change | Where |
-| --- | --- |
-| **Overall speed** | `--motion` in the `THEME` block of `src/styles.css`: `1` = as designed, `2` = twice as slow, `0.5` = twice as fast, `0` = no animation. |
-| **The "feel" (bounciness)** | The easing curves right below it: `--ease-spring` (cards, badges, presses), `--ease-bounce` (run card, tab pill, toasts), `--ease-soft` (fades and slides), `--ease-sheet` (bottom sheets), `--ease-exit` (things leaving). Try curves at [cubic-bezier.com](https://cubic-bezier.com). |
-| **A single animation** | The `MOTION` section at the end of `src/styles.css`; each rule is labelled (shelves, plus button, sheets, groceries, profile picker). Durations are written as `calc(260ms * var(--motion))`; change the number. |
-
-Phones with "Reduce motion" turned on (iPhone: Settings → Accessibility → Motion) get no animations.
-
-### Shop logos
-
-The grocery-run buttons show the shop names in their brand colours. To show logos instead:
-
-1. Get each logo as an image, ideally a transparent `.svg` or `.png` about 300px wide. Good sources are the shop's own website or press/media page, or Wikimedia Commons (search e.g. "Asda logo svg"). The logos are the shops' trademarks; using them in a private app for your household is fine, but don't publish the app with them.
-2. Save them in `public/stores/` as `asda.svg`, `lidl.svg` and `sainsburys.svg` (any name works).
-3. In `src/config.ts`, add a `logo` to each shop in `STORES`:
-   ```ts
-   { name: 'ASDA', label: 'ASDA', color: '#78be20', logo: '/stores/asda.svg' },
-   ```
-4. Reload. If a logo file is missing or broken, the button falls back to the shop name.
-
 ## How it works
 
 - **Cupboard**: one glass shelf per category. Each item card is framed in its owners' colours (split into bands when shared). A badge `xN` shows how many housemates have one.
@@ -154,9 +113,29 @@ The grocery-run buttons show the shop names in their brand colours. To show logo
 ## Development
 
 ```bash
-npm run db:status # which migrations your live Supabase database has
-npm run check:catalog # scan-receipt's shelf/icon lists match the app's
-npm run test:db   # runs the migrations in an in-memory Postgres (PGlite) and checks flows + RLS
-npm run test:suggest  # checks the icon/shelf guesser against tricky names
+npm run dev           # the app, live-reloading (also on your phone via the Network URL)
+npm run tune          # dev-only page for item icons and name → icon/shelf keywords
+npm run feedback      # read in-app feedback (needs SUPABASE_SERVICE_ROLE_KEY)
+npm run db:status     # which migrations your live Supabase database has
+npm run test:db       # runs the migrations in an in-memory Postgres (PGlite) and checks flows + RLS
+npm run test:suggest  # checks the icon/shelf guesser against the names in src/catalog/keyword-tests.ts
+npm run check:catalog # scan-receipt's shelf/icon lists match the app's; keyword rules use real icons
 npm run build
 ```
+
+Project map:
+
+| Path | What |
+| --- | --- |
+| `src/theme.css` | Colours, fonts, sizes, motion speed |
+| `src/styles.css` | All other styles, in labelled sections; animations in the MOTION section |
+| `src/config.ts` | Tabs, icon sizes, shelf item order, shops |
+| `src/data.ts` | Shelves, profile colours, the name → icon/shelf guesser |
+| `src/catalog/` | Item icons, keyword rules, guesser tests (edited by `npm run tune`) |
+| `src/icons.tsx` | Interface and shelf icons (Lucide) |
+| `src/components/` | Screens |
+| `src/store.ts` | The only data layer (Supabase calls) |
+| `supabase/migrations/` | Database schema and functions |
+| `supabase/functions/` | `notify` (push) and `scan-receipt` (Gemini) |
+| `tools/tune/` | The tuning page (dev only, never deployed) |
+| `docs/` | The guides above |

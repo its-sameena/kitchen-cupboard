@@ -2,9 +2,10 @@
 // (it can't import the React app). This fails if they drift apart.
 import { readFileSync } from 'node:fs'
 
-const icons = readFileSync('src/icons.tsx', 'utf8')
-const block = icons.slice(icons.indexOf('export const ITEM_ICONS'), icons.indexOf('/** Renders an item'))
-const appIcons = [...block.matchAll(/^\s+'?([a-z][a-z0-9-]*)'?:\s*\{\s*icon:/gm)].map((m) => m[1])
+import { ITEM_ICON_DATA } from '../src/catalog/item-icons.ts'
+import { KEYWORD_RULES } from '../src/catalog/keywords.ts'
+
+const appIcons = Object.keys(ITEM_ICON_DATA)
 const appCats = [...readFileSync('src/data.ts', 'utf8').matchAll(/\{ id: '([a-z]+)', label: '[^']+' \}/g)].map((m) => m[1])
 
 const fn = readFileSync('supabase/functions/scan-receipt/index.ts', 'utf8')
@@ -13,6 +14,8 @@ const fnCats = JSON.parse(fn.match(/const CATEGORIES = (\[.*?\])/s)[1])
 
 const diff = (a, b) => a.filter((x) => !b.includes(x))
 const problems = [
+  ...KEYWORD_RULES.filter((r) => !appIcons.includes(r.icon)).map((r) => `keyword rule [${r.keywords[0]}…] uses unknown icon "${r.icon}"`),
+  ...KEYWORD_RULES.filter((r) => !appCats.includes(r.shelf)).map((r) => `keyword rule [${r.keywords[0]}…] uses unknown shelf "${r.shelf}"`),
   ...diff(appIcons, fnIcons).map((x) => `icon "${x}" missing from scan-receipt`),
   ...diff(fnIcons, appIcons).map((x) => `scan-receipt has unknown icon "${x}"`),
   ...diff(appCats, fnCats).map((x) => `shelf "${x}" missing from scan-receipt`),
