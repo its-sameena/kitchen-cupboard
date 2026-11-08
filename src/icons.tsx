@@ -1,7 +1,8 @@
 /**
  * Every icon in the app lives here, so the look can be changed in one place.
  * Icons come from Lucide (https://lucide.dev/icons). To swap one, import a
- * different icon from 'lucide-react' and change the mapping below.
+ * different icon from 'lucide-react' and change the mapping below. A few food
+ * icons Lucide lacks (Tabler, Lucide Lab, or drawn by hand) are in src/extra-icons.ts.
  */
 import type { LucideIcon, LucideProps } from 'lucide-react'
 import {
@@ -13,6 +14,7 @@ import {
   Share2, ShoppingBag, ShoppingBasket, ShoppingCart, Shrimp, Smartphone, Snowflake, Soup, SprayCan, Sprout,
   Store, Trash2, ChevronLeft, Clipboard, ClipboardCheck, Shuffle, Camera, ReceiptText, TriangleAlert, Unplug, Wheat, Wine, WifiOff, X, Archive, ClipboardList,
 } from 'lucide-react'
+import { BellPepper, CerealBox, Garlic, Onion, SaltShaker, SpiceMill, Tomato } from './extra-icons'
 import type { CategoryId, EventType, FeedbackKind } from './types'
 
 // ───────────────────────── interface icons ─────────────────────────
@@ -77,7 +79,7 @@ export const CATEGORY_ICONS: Record<CategoryId, LucideIcon> = {
   spices: Leaf,
   baking: Wheat,
   coffee: Coffee,
-  cereals: Soup,
+  cereals: CerealBox,
   grains: CookingPot,
   canned: Can,
   sauces: Droplet,
@@ -97,7 +99,7 @@ export const DEFAULT_ITEM_ICON: Record<CategoryId, string> = {
   spices: 'flask-round',
   baking: 'wheat',
   coffee: 'coffee',
-  cereals: 'soup',
+  cereals: 'cereal-box',
   grains: 'cooking-pot',
   canned: 'can',
   sauces: 'droplet',
@@ -116,6 +118,8 @@ export const DEFAULT_ITEM_ICON: Record<CategoryId, string> = {
  */
 export const ITEM_ICONS: Record<string, { icon: LucideIcon; label: string }> = {
   'flask-round': { icon: FlaskRound, label: 'Spice jar' },
+  salt: { icon: SaltShaker, label: 'Salt / pepper' },
+  'spice-mill': { icon: SpiceMill, label: 'Spice mill' },
   flame: { icon: Flame, label: 'Chilli / hot' },
   leaf: { icon: Leaf, label: 'Herbs' },
   milk: { icon: Milk, label: 'Milk' },
@@ -144,7 +148,8 @@ export const ITEM_ICONS: Record<string, { icon: LucideIcon; label: string }> = {
   'bottle-wine': { icon: BottleWine, label: 'Bottle' },
   martini: { icon: Martini, label: 'Spirits' },
   can: { icon: Can, label: 'Tin' },
-  soup: { icon: Soup, label: 'Bowl / cereal' },
+  soup: { icon: Soup, label: 'Bowl' },
+  'cereal-box': { icon: CerealBox, label: 'Cereal' },
   'cooking-pot': { icon: CookingPot, label: 'Pasta / rice' },
   bean: { icon: Bean, label: 'Beans' },
   nut: { icon: Nut, label: 'Nuts' },
@@ -157,6 +162,10 @@ export const ITEM_ICONS: Record<string, { icon: LucideIcon; label: string }> = {
   cherry: { icon: Cherry, label: 'Berries' },
   grape: { icon: Grape, label: 'Grapes' },
   avocado: { icon: Avocado, label: 'Avocado' },
+  tomato: { icon: Tomato, label: 'Tomato' },
+  onion: { icon: Onion, label: 'Onion' },
+  garlic: { icon: Garlic, label: 'Garlic' },
+  'bell-pepper': { icon: BellPepper, label: 'Pepper (veg)' },
   carrot: { icon: Carrot, label: 'Carrot' },
   broccoli: { icon: Broccoli, label: 'Broccoli' },
   'leafy-green': { icon: LeafyGreen, label: 'Greens' },

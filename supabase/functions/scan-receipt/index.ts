@@ -4,7 +4,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
 
 // Must match ITEM_ICONS (src/icons.tsx) and CATEGORIES (src/data.ts). `npm run check:catalog` verifies this.
-const ICONS = ["flask-round", "flame", "leaf", "milk", "egg", "drumstick", "beef", "ham", "fish", "shrimp", "snowflake", "ice-cream", "popsicle", "pizza", "wheat", "cake-slice", "cupcake", "candy", "cookie", "croissant", "sandwich", "coffee", "cup-soda", "glass-water", "beer", "wine", "bottle-wine", "martini", "can", "soup", "cooking-pot", "bean", "nut", "popcorn", "amphora", "droplet", "apple", "banana", "citrus", "cherry", "grape", "avocado", "carrot", "broccoli", "leafy-green", "salad", "sprout", "spray-can", "paper-bag", "package", "shopping-bag"]
+const ICONS = ["flask-round", "salt", "spice-mill", "flame", "leaf", "milk", "egg", "drumstick", "beef", "ham", "fish", "shrimp", "snowflake", "ice-cream", "popsicle", "pizza", "wheat", "cake-slice", "cupcake", "candy", "cookie", "croissant", "sandwich", "coffee", "cup-soda", "glass-water", "beer", "wine", "bottle-wine", "martini", "can", "soup", "cereal-box", "cooking-pot", "bean", "nut", "popcorn", "amphora", "droplet", "apple", "banana", "citrus", "cherry", "grape", "avocado", "tomato", "onion", "garlic", "bell-pepper", "carrot", "broccoli", "leafy-green", "salad", "sprout", "spray-can", "paper-bag", "package", "shopping-bag"]
 const CATEGORIES = ["spices", "baking", "coffee", "cereals", "grains", "canned", "sauces", "snacks", "drinks", "produce", "dairy", "cold", "frozen", "other"]
 
 // Tried in order; a model that's unavailable or out of free quota falls through to the next.
