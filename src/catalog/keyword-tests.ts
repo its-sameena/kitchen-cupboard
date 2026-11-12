@@ -73,4 +73,10 @@ export const KEYWORD_TESTS: KeywordTest[] = [
   { name: "Batteries", shelf: null },
   { name: "", shelf: null },
   { name: "Jalapenos", shelf: "produce", icon: "bell-pepper" },
+  { name: "Peaches", shelf: "produce", icon: "apple" },
+  { name: "Conference pears", shelf: "produce", icon: "apple" },
+  { name: "Doritos", shelf: "snacks", icon: "popcorn" },
+  { name: "Ribena", shelf: "drinks", icon: "cup-soda" },
+  { name: "Baguette", shelf: "grains", icon: "sandwich" },
+  { name: "Tic tac", shelf: "snacks", icon: "candy" },
 ]

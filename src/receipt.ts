@@ -104,7 +104,7 @@ export async function scanReceipt(file: File, cancel?: AbortSignal): Promise<Sca
   const image = await photoToJpeg(file)
   const t1 = performance.now()
   if (timeUp.aborted) throw new ScanTimeout()
-  const { data, error } = await sb.functions.invoke('scan-receipt', { body: { image, mime: 'image/jpeg' }, signal })
+  const { data, error } = await sb.functions.invoke('scan-receipt', { body: { image, mime: 'image/jpeg', mode: 'fast' }, signal })
   const t2 = performance.now()
   if (timeUp.aborted) throw new ScanTimeout()
   if (cancel?.aborted) throw new Error('Cancelled')
@@ -118,11 +118,13 @@ export async function scanReceipt(file: File, cancel?: AbortSignal): Promise<Sca
     throw new Error('Couldn’t reach the receipt scanner. Check your connection and try again.')
   }
   const res = data as { store: string; items: ScannedItem[]; meta?: { model: string; modelVersion: string; usage: ScanTiming['usage']; ms: { server: number; gemini: number }; imageKB: number } }
-  // Shelf and icon: use Gemini's when it gives them, otherwise the app's own guesser.
+  // Gemini picks the shelf (fast mode); the app picks the icon with its own keywords
+  // (src/catalog/keywords.ts), or the shelf's default icon if its guess is for another shelf.
   const items = res.items.map((it) => {
-    const guess = it.category && it.icon ? null : suggestFor(it.name)
+    const guess = suggestFor(it.name)
     const category = (it.category || guess?.category || 'other') as CategoryId
-    return { ...it, category, icon: it.icon || guess?.icon || DEFAULT_ITEM_ICON[category] }
+    const icon = it.icon || (guess && guess.category === category ? guess.icon : DEFAULT_ITEM_ICON[category])
+    return { ...it, category, icon }
   })
   const m = res.meta
   const timing: ScanTiming | null = m

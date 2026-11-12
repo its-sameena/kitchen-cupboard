@@ -52,7 +52,8 @@ if (!KEY) {
   process.exit(1)
 }
 const DIR = 'receipts'
-const photos = existsSync(DIR) ? readdirSync(DIR).filter((f) => /\.(jpe?g|png|heic|heif|webp)$/i.test(f)) : []
+const PREFIX = arg('photos', '') // only photos whose name starts with this
+const photos = existsSync(DIR) ? readdirSync(DIR).filter((f) => /\.(jpe?g|png|heic|heif|webp)$/i.test(f) && f.startsWith(PREFIX)) : []
 if (!photos.length) {
   console.error('Put 3–5 receipt photos in receipts/ (crop out card numbers first).')
   process.exit(1)

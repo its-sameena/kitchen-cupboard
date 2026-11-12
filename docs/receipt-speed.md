@@ -75,9 +75,24 @@ The setups live at the top of `scripts/bench-receipts.mjs`; add your own lines t
 
 `receipts/bench-<date>.md` lists every item each setup found, per photo, with what's missing or extra. Read it to judge whether a "miss" matters (e.g. "Semi skimmed milk" vs "Milk" is fine).
 
-## Switching the live app to a faster setup
+## What we chose (v0.10, November 2026)
 
-In `supabase/functions/scan-receipt/index.ts`, set `MODELS`, `SHAPE` and `THINKING` to the winning setup, then deploy:
+Benchmarks on 16 receipts (8 small web images, 8 full-size phone photos):
+
+| | Today's setup on Flash | Flash-Lite, full answer | **Flash-Lite, shelf answer (chosen)** |
+| --- | --- | --- | --- |
+| Time (Mac → Google, median) | 6–7 s when it answers; often stalled or "overloaded" | 2.6 s | **1.6 s** |
+| Free quota | 20 requests/day, 5/minute | 15/minute | 15/minute |
+| Items found | | reference | same items (differences were only wording) |
+| Shelf matches reference | | | 92–95%, nothing falls to Other |
+
+Why: Gemini 3.8 Flash "thinks" before answering, is often overloaded, and its free tier allows only 20 requests a day for the whole household. Flash-Lite doesn't think, and asking only for name, quantity and shelf (not icon, printed line and confidence) roughly halves what it writes. The app picks icons with its own keywords.
+
+The function has two **modes**: `fast` (sent by the app from v0.10: Flash-Lite first, Flash as backup, shelf answer, 6 s per model) and `classic` (older app versions: Flash first, full answer).
+
+## Switching to another setup
+
+In `supabase/functions/scan-receipt/index.ts`, change `MODES.fast` (models, answer shape, per-model time) to the winning setup, then deploy:
 
 ```bash
 npx supabase functions deploy scan-receipt

@@ -4,15 +4,30 @@
 import { createClient } from 'npm:@supabase/supabase-js@2.49.1'
 import { clean, endpoint, readResponse, requestBody, type AnswerShape, type Thinking, type Usage } from './gemini.ts'
 
-// Tried in order; a model that's unavailable or out of free quota falls through to the next.
-const MODELS = [Deno.env.get('GEMINI_MODEL'), 'gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-3.8-flash', 'gemini-3.5-flash-lite']
-  .filter((m, i, a): m is string => !!m && a.indexOf(m) === i)
-/** Answer shape and thinking for every model above. See gemini.ts and `npm run bench:receipts`. */
-const SHAPE: AnswerShape = 'full'
+const unique = (ms: (string | undefined)[]) => ms.filter((m, i, a): m is string => !!m && a.indexOf(m) === i)
+
+/**
+ * How to read a receipt. Models are tried in order; one that's busy, out of free quota
+ * or too slow falls through to the next. Chosen with `npm run bench:receipts`
+ * (docs/receipt-speed.md): Flash-Lite doesn't "think" and has a far bigger free
+ * quota than Flash (20 requests/day), and the "shelf" answer is ~40% shorter.
+ *  - fast:    sent by the app from v0.10 ({ mode: 'fast' }).
+ *  - classic: older app versions, which expect Gemini to pick icons too.
+ */
+const MODES: Record<'fast' | 'classic', { models: string[]; shape: AnswerShape; perModelMs: number }> = {
+  fast: {
+    models: unique([Deno.env.get('GEMINI_MODEL'), 'gemini-flash-lite-latest', 'gemini-3.5-flash-lite', 'gemini-flash-latest']),
+    shape: 'shelf',
+    perModelMs: 6_000, // Lite usually answers in ~1.5 s; leave the backup model time
+  },
+  classic: {
+    models: unique([Deno.env.get('GEMINI_MODEL'), 'gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-3.8-flash', 'gemini-3.5-flash-lite']),
+    shape: 'full',
+    perModelMs: 9_000,
+  },
+}
 /** Stay under the app's 15 s limit (SCAN_TIMEOUT_MS in src/config.ts). */
 const TOTAL_BUDGET_MS = 13_000
-/** A model that hasn't answered by now is skipped for the next (faster) one. */
-const PER_MODEL_MS = 9_000
 const THINKING: Thinking = 'default'
 
 const MAX_BASE64 = 7_000_000 // ~5 MB image; the app sends ~300 KB
@@ -40,7 +55,8 @@ interface Answer {
   result: ReturnType<typeof clean>
 }
 
-async function askGemini(key: string, image: string, mime: string, started: number): Promise<Answer> {
+async function askGemini(key: string, image: string, mime: string, started: number, mode: keyof typeof MODES): Promise<Answer> {
+  const { models: MODELS, shape, perModelMs: PER_MODEL_MS } = MODES[mode]
   const tried: string[] = []
   let geminiMs = 0
   for (const [i, model] of MODELS.entries()) {
@@ -56,7 +72,7 @@ async function askGemini(key: string, image: string, mime: string, started: numb
       res = await fetch(endpoint(model), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-        body: JSON.stringify(requestBody(image, mime, { model, shape: SHAPE, thinking: THINKING })),
+        body: JSON.stringify(requestBody(image, mime, { model, shape, thinking: THINKING })),
         signal: AbortSignal.timeout(limit),
       })
     } catch (e) {
@@ -121,17 +137,19 @@ Deno.serve(async (req) => {
   if (!device) return json({ error: 'This phone is not in a kitchen' }, 403)
 
   const checkMs = performance.now() - started
-  const { image, mime } = await req.json().catch(() => ({}))
+  const { image, mime, mode: wanted } = await req.json().catch(() => ({}))
+  const mode = wanted === 'fast' ? 'fast' : 'classic'
   if (typeof image !== 'string' || !image || image.length > MAX_BASE64) return json({ error: 'Send a photo under 5 MB' }, 400)
   const type = typeof mime === 'string' && /^image\/(jpeg|png|webp|heic|heif)$/.test(mime) ? mime : 'image/jpeg'
 
   try {
-    const a = await askGemini(key, image, type, started)
+    const a = await askGemini(key, image, type, started, mode)
     // Timings let the app show "Read in 4.2 s" and help tune speed (see docs/receipt-speed.md).
     const meta = {
       model: a.model,
       modelVersion: a.modelVersion,
-      shape: SHAPE,
+      mode,
+      shape: MODES[mode].shape,
       thinking: THINKING,
       usage: a.usage,
       ms: { check: Math.round(checkMs), gemini: Math.round(a.geminiMs), server: Math.round(performance.now() - started) },

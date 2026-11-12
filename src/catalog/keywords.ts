@@ -49,7 +49,7 @@ export const KEYWORD_RULES: KeywordRule[] = [
   // grains
   { shelf: "grains", icon: "cooking-pot", keywords: ["pasta", "spaghetti", "penne", "fusilli", "macaroni", "lasagne", "noodle", "couscous", "quinoa"] },
   { shelf: "grains", icon: "cooking-pot", keywords: ["rice", "basmati", "risotto"] },
-  { shelf: "grains", icon: "sandwich", keywords: ["bread", "loaf", "bagel", "wrap", "tortilla", "pitta", "naan", "crumpet", "garlic bread"] },
+  { shelf: "grains", icon: "sandwich", keywords: ["bread", "loaf", "bagel", "wrap", "tortilla", "pitta", "naan", "crumpet", "garlic bread", "baguette", "brioche", "rolls", "sourdough"] },
   { shelf: "grains", icon: "croissant", keywords: ["croissant", "pastry", "pain au chocolat"] },
 
   // canned
@@ -61,9 +61,9 @@ export const KEYWORD_RULES: KeywordRule[] = [
   { shelf: "sauces", icon: "amphora", keywords: ["ketchup", "mayo", "mayonnaise", "mustard", "sauce", "vinegar", "soy", "sriracha", "pesto", "salsa", "dressing", "chutney", "relish"] },
 
   // snacks
-  { shelf: "snacks", icon: "popcorn", keywords: ["crisps", "chips", "tortilla chips", "pringles"] },
+  { shelf: "snacks", icon: "popcorn", keywords: ["crisps", "chips", "tortilla chips", "pringles", "doritos", "monster munch", "quavers", "wotsits", "hula hoops"] },
   { shelf: "snacks", icon: "candy", keywords: ["chocolate", "chocolate bar"] },
-  { shelf: "snacks", icon: "candy", keywords: ["sweets", "candy", "candy cane", "gummy"] },
+  { shelf: "snacks", icon: "candy", keywords: ["sweets", "candy", "candy cane", "gummy", "tic tac", "haribo", "laces"] },
   { shelf: "snacks", icon: "cookie", keywords: ["biscuit", "cookie", "digestives", "crackers"] },
   { shelf: "snacks", icon: "cake-slice", keywords: ["cake", "brownie", "muffin"] },
   { shelf: "snacks", icon: "popcorn", keywords: ["popcorn"] },
@@ -75,10 +75,10 @@ export const KEYWORD_RULES: KeywordRule[] = [
   { shelf: "drinks", icon: "wine", keywords: ["wine", "prosecco"] },
   { shelf: "drinks", icon: "martini", keywords: ["vodka", "gin", "rum", "whisky", "whiskey", "tequila"] },
   { shelf: "drinks", icon: "glass-water", keywords: ["water", "sparkling water"] },
-  { shelf: "drinks", icon: "cup-soda", keywords: ["soda", "cola", "coke", "lemonade", "pop", "fizzy", "energy drink"] },
+  { shelf: "drinks", icon: "cup-soda", keywords: ["soda", "cola", "coke", "lemonade", "pop", "fizzy", "energy drink", "ribena", "oasis", "fanta", "sprite", "pepsi", "lucozade"] },
 
   // produce
-  { shelf: "produce", icon: "apple", keywords: ["apple"] },
+  { shelf: "produce", icon: "apple", keywords: ["apple", "pear", "peach", "nectarine", "plum", "mango", "melon", "pineapple", "kiwi"] },
   { shelf: "produce", icon: "banana", keywords: ["banana"] },
   { shelf: "produce", icon: "citrus", keywords: ["lemon", "lime", "orange", "satsuma", "clementine", "grapefruit"] },
   { shelf: "produce", icon: "grape", keywords: ["grape"] },
