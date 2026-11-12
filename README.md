@@ -11,6 +11,7 @@ A phone-first PWA for a shared kitchen: see who has what on glass shelves in a s
 | [Animations](docs/animations.md) | make motion faster, slower, bouncier, or change a single animation |
 | [Receipt scanning speed](docs/receipt-speed.md) | see where scan time goes, and test faster Gemini settings with your own receipts (`npm run bench:receipts`) |
 | [Shipping updates safely](docs/shipping.md) | test on a preview, change the database without losing data, deploy functions, roll back |
+| [Roadmap](docs/roadmap.md) | see the feature ideas we've discussed, with effort and a recommended order |
 | [Working with Claude](docs/working-with-claude.md) | turn an idea into the app quickly, and spend fewer tokens doing it |
 
 ## One-time setup (≈10 minutes)

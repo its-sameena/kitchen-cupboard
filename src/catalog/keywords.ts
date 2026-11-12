@@ -27,7 +27,7 @@ export const KEYWORD_RULES: KeywordRule[] = [
 
   // spices
   { shelf: "spices", icon: "salt", keywords: ["salt", "sea salt", "salt and pepper", "pepper", "black pepper", "white pepper", "ground pepper"] },
-  { shelf: "spices", icon: "spice-mill", keywords: ["peppercorns", "pepper mill", "peppermill", "salt mill", "grinder", "spice mill", "spice grinder"] },
+  { shelf: "spices", icon: "spice-mill", keywords: ["peppercorns", "pepper mill", "peppermill", "salt mill", "grinder", "spice mill", "spice grinder", "chilli powder", "chili powder"] },
   { shelf: "spices", icon: "flame", keywords: ["chilli", "chili", "chilli flakes", "paprika", "cayenne"] },
   { shelf: "spices", icon: "leaf", keywords: ["garlic powder", "onion powder", "cinnamon", "cumin", "turmeric", "curry powder", "garam masala", "oregano", "basil", "thyme", "rosemary", "parsley", "coriander", "spice", "mixed spice", "herb", "mixed herbs", "nutmeg", "ginger", "bay leaves", "stock cube", "stock", "gravy"] },
 
@@ -38,12 +38,13 @@ export const KEYWORD_RULES: KeywordRule[] = [
   { shelf: "baking", icon: "amphora", keywords: ["honey", "syrup", "golden syrup", "maple syrup"] },
 
   // coffee
-  { shelf: "coffee", icon: "coffee", keywords: ["coffee", "espresso", "coffee beans", "instant coffee", "hot chocolate"] },
+  { shelf: "coffee", icon: "coffee", keywords: ["espresso", "instant coffee", "hot chocolate"] },
   { shelf: "coffee", icon: "coffee", keywords: ["tea", "tea bags", "green tea", "peppermint tea", "matcha", "chai"] },
   { shelf: "coffee", icon: "milk", keywords: ["creamer", "coffee creamer"] },
+  { shelf: "coffee", icon: "coffee-bean", keywords: ["coffee", "coffee beans"] },
 
   // cereals
-  { shelf: "cereals", icon: "cereal-box", keywords: ["cereal", "cereal box", "cornflakes", "corn flakes", "granola", "muesli", "bran flakes", "weetabix", "shreddies", "cheerios", "rice krispies", "coco pops", "frosties", "chocos"] },
+  { shelf: "cereals", icon: "cereal-box", keywords: ["cereal", "cereal box", "cornflakes", "corn flakes", "granola", "muesli", "bran flakes", "weetabix", "shreddies", "cheerios", "rice krispies", "coco pops", "frosties", "chocos", "nesquik"] },
   { shelf: "cereals", icon: "wheat", keywords: ["oats", "porridge", "porridge oats", "rolled oats"] },
 
   // grains

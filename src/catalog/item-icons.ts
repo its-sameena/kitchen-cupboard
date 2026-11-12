@@ -586,4 +586,12 @@ export const ITEM_ICON_DATA: Record<string, ItemIconData> = {
       ["path", { d: "M3.4 5.467a2 2 0 0 0-.4 1.2V20a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6.667a2 2 0 0 0-.4-1.2l-2-2.667A2 2 0 0 0 17 2H7a2 2 0 0 0-1.6.8z" }],
     ],
   },
+  "coffee-bean": {
+    label: "Coffee bean",
+    source: "lucide-lab:coffee-bean",
+    node: [
+      ["path", { d: "M4.05 19.95a11.24 8.585 135 0 0 15.9-15.9 11.24 8.585 135 0 0-15.9 15.9" }],
+      ["path", { d: "M19.8 4.2C20 14 4 10 4.2 19.8" }],
+    ],
+  },
 }

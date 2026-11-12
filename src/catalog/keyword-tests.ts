@@ -15,7 +15,6 @@ export const KEYWORD_TESTS: KeywordTest[] = [
   { name: "Oranges", shelf: "produce", icon: "citrus" },
   { name: "Mixed spice", shelf: "spices", icon: "leaf" },
   { name: "Baked beans", shelf: "canned", icon: "can" },
-  { name: "Coffee beans", shelf: "coffee", icon: "coffee" },
   { name: "Tomatoes", shelf: "produce", icon: "tomato" },
   { name: "Cherry tomatoes", shelf: "produce", icon: "tomato" },
   { name: "Chopped tomatoes", shelf: "canned", icon: "can" },
@@ -79,4 +78,9 @@ export const KEYWORD_TESTS: KeywordTest[] = [
   { name: "Ribena", shelf: "drinks", icon: "cup-soda" },
   { name: "Baguette", shelf: "grains", icon: "sandwich" },
   { name: "Tic tac", shelf: "snacks", icon: "candy" },
+  { name: "chilli powder", shelf: "spices", icon: "spice-mill" },
+  { name: "Nesquik", shelf: "cereals", icon: "cereal-box" },
+  { name: "chili powder", shelf: "spices", icon: "spice-mill" },
+  { name: "coffee", shelf: "coffee", icon: "coffee-bean" },
+  { name: "Coffee beans", shelf: "coffee", icon: "coffee-bean" },
 ]
