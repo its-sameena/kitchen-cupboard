@@ -99,28 +99,14 @@ export class ScanTimeout extends Error {
  */
 export async function scanReceipt(file: File, cancel?: AbortSignal): Promise<ScanResult> {
   const t0 = performance.now()
-  // One signal for "time's up" or "cancelled" (AbortSignal.any isn't on older iPhones).
-  const stop = new AbortController()
-  let timedOut = false
-  const timer = setTimeout(() => {
-    timedOut = true
-    stop.abort()
-  }, SCAN_TIMEOUT_MS)
-  const onCancel = () => stop.abort()
-  cancel?.addEventListener('abort', onCancel)
-  let data: unknown, error: { message: string; context?: Response } | null = null
-  let t1 = t0
-  try {
-    const image = await photoToJpeg(file)
-    t1 = performance.now()
-    if (timedOut) throw new ScanTimeout()
-    ;({ data, error } = await sb.functions.invoke('scan-receipt', { body: { image, mime: 'image/jpeg' }, signal: stop.signal }))
-  } finally {
-    clearTimeout(timer)
-    cancel?.removeEventListener('abort', onCancel)
-  }
+  const timeUp = AbortSignal.timeout(SCAN_TIMEOUT_MS)
+  const signal = cancel ? AbortSignal.any([cancel, timeUp]) : timeUp
+  const image = await photoToJpeg(file)
+  const t1 = performance.now()
+  if (timeUp.aborted) throw new ScanTimeout()
+  const { data, error } = await sb.functions.invoke('scan-receipt', { body: { image, mime: 'image/jpeg' }, signal })
   const t2 = performance.now()
-  if (timedOut) throw new ScanTimeout()
+  if (timeUp.aborted) throw new ScanTimeout()
   if (cancel?.aborted) throw new Error('Cancelled')
   if (error) {
     // The function sends a friendly { error } message; dig it out of the HTTP error.
