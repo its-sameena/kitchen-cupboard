@@ -84,6 +84,7 @@ async function scan(setup, image, thinkingOk) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'x-goog-api-key': KEY },
         body: JSON.stringify(requestBody(image, 'image/jpeg', { model: setup.model, shape: setup.shape, thinking })),
+        signal: AbortSignal.timeout(120_000),
       })
       const ms = performance.now() - t0
       if (res.ok) {
