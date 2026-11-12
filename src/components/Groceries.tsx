@@ -290,7 +290,7 @@ function StoreButton({
   const showLogo = store.logo && !logoFailed
   return (
     <button
-      className={'store-btn' + (picked ? ' picked' : '')}
+      className={'store-btn' + (showLogo ? ' has-logo' : '') + (picked ? ' picked' : '')}
       style={{ '--store': store.color, '--i': index } as React.CSSProperties}
       onClick={onClick}
       aria-label={store.name ? `Going to ${store.label}` : 'Going somewhere else'}

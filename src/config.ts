@@ -57,9 +57,9 @@ export interface StoreConfig {
 
 /** Shops offered when starting a grocery run (2 per row). See "Shop logos" in docs/customising.md. */
 export const STORES: StoreConfig[] = [
-  { name: 'ASDA', label: 'ASDA', color: '#78be20' },
-  { name: 'Lidl', label: 'Lidl', color: '#0050aa' },
-  { name: "Sainsbury's", label: "Sainsbury's", color: '#f06c00' },
+  { name: 'ASDA', label: 'ASDA', color: '#78be20', logo: '/stores/asda.svg' },
+  { name: 'Lidl', label: 'Lidl', color: '#0050aa', logo: '/stores/lidl.svg' },
+  { name: "Sainsbury's", label: "Sainsbury's", color: '#f06c00', logo: '/stores/sainsburys.svg' },
   { name: '', label: 'Other', color: '#9a9a9a' },
 ]
 

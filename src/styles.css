@@ -384,7 +384,7 @@ textarea { resize: vertical; padding: 12px 14px; }
   transition: transform 0.1s, background 0.15s;
 }
 .store-btn:active { transform: scale(0.97); background: color-mix(in srgb, var(--store) 10%, var(--surface)); }
-.store-btn img { max-width: 100%; max-height: 44px; object-fit: contain; }
+.store-btn img { max-width: 100%; max-height: 50px; object-fit: contain; }
 
 /* ───────────── House ───────────── */
 .members { list-style: none; padding: 0; margin: 0 0 12px; display: flex; flex-direction: column; gap: 10px; }
@@ -631,6 +631,8 @@ textarea { resize: vertical; padding: 12px 14px; }
 .run-card.live { animation: kc-drop calc(440ms * var(--motion)) var(--ease-bounce) backwards; }
 .store-btn { animation: kc-pop-soft calc(340ms * var(--motion)) var(--ease-spring) backwards; animation-delay: calc((160ms + var(--i, 0) * 60ms) * var(--motion)); transition: background calc(160ms * var(--motion)) ease, color calc(160ms * var(--motion)) ease, transform .22s var(--ease-spring); }
 .store-btn.picked { background: var(--store); color: #fff; transform: scale(.96); }
+/* Logos would vanish on their own brand colour: tint instead of fill */
+.store-btn.has-logo.picked { background: color-mix(in srgb, var(--store) 16%, var(--surface)); box-shadow: inset 0 0 0 2px var(--store); }
 .check { transition: background calc(180ms * var(--motion)) ease, border-color calc(180ms * var(--motion)) ease, transform .22s var(--ease-spring); }
 .check.on { transform: scale(1.08); }
 .check svg path { stroke-dasharray: 24; stroke-dashoffset: 24; transition: stroke-dashoffset calc(260ms * var(--motion)) cubic-bezier(.65, 0, .35, 1) calc(90ms * var(--motion)); }

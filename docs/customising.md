@@ -88,7 +88,9 @@ The grocery-run buttons show the shop names in brand colours. To show logos inst
    ```ts
    { name: 'ASDA', label: 'ASDA', color: '#78be20', logo: '/stores/asda.svg' },
    ```
-4. **Reload.** A missing or broken logo falls back to the name.
+4. **Reload.** A missing or broken logo falls back to the name. When a shop is tapped, logo buttons get a light tint of the shop's colour (instead of a solid fill) so the logo stays visible.
+
+The ASDA, Lidl and Sainsbury's logos are set up (`public/stores/asda.svg`, `lidl.svg`, `sainsburys.svg`). Use simple file names: no spaces or apostrophes.
 
 ## Doing it yourself vs asking Claude
 

@@ -20,7 +20,7 @@ Effort: **tiny** (under an hour) · **small** (an evening) · **medium** (a few 
 | 4 | **Home-screen badge** | The app icon shows a count of new requests and out-of-stock items. | Small | Works for home-screen web apps on iPhone and Android. |
 | 5 | **Barcode scanning** | Scan a product to add it. | Medium | iPhone browsers have no built-in barcode reader (needs a library), and naming products needs a product database. Less useful now that receipt scanning works. |
 | 6 | **Haptics** | Small taps on actions. | Small | iPhone web apps can't vibrate; Android only. Low value for an iOS-first app. |
-| 7 | **Shop logos** | Logos on the grocery-run buttons. | Tiny | You supply the images: [customising.md](customising.md#shop-logos). |
+| 7 | ~~Shop logos~~ | Done in v0.10.1. | | |
 | 8 | **Notification test on real phones** | Make sure every alert reaches every phone, including Android. | Small | Mostly testing. |
 | 9 | **Changelog and version tags** | `CHANGELOG.md` (doubles as release notes for housemates) and a git tag per release. | Tiny | Version history so far is in [README → Development](../README.md#development) via `git log`. |
 | 10 | **Refresh old icons** | Items added before v0.9 switch to the better icons and guesses in one go. | Small | One database update; ask before running on the live database. |
@@ -42,5 +42,6 @@ Effort: **tiny** (under an hour) · **small** (an evening) · **medium** (a few 
 
 ## Done
 
+- v0.10.1: shop logos on the grocery-run buttons (ASDA, Lidl, Sainsbury's).
 - v0.10: faster receipt scanning (Flash-Lite, 15 s limit with Scan again). [receipt-speed.md](receipt-speed.md)
 - v0.9: smarter icon guesses, Cereals shelf, new food icons, tuning page, Report wrong guess.
