@@ -15,11 +15,14 @@ const INTRO = `You are reading a photo of a UK supermarket receipt (e.g. ASDA, L
 List the grocery and household products that were bought.`
 
 /**
- * "full": Gemini also picks shelf, icon and echoes the printed line (current app).
- * "slim": only name, quantity and an unsure flag; the app guesses shelf and icon
- *         itself from the name (fewer words for Gemini to write = faster).
+ * "full":  Gemini also picks shelf, icon and echoes the printed line (original app).
+ * "shelf": name, quantity, shelf and an unsure flag; the app picks the icon.
+ * "slim":  only name, quantity and an unsure flag; the app guesses shelf and icon
+ *          itself from the name (fewest words for Gemini to write = fastest).
  */
-export type AnswerShape = 'full' | 'slim'
+export type AnswerShape = 'full' | 'shelf' | 'slim'
+
+const CATEGORY_RULE = `- category must be one of: spices (Spices & Herbs), baking (Baking), coffee (Coffee & Tea), cereals (Cereals: breakfast cereal, oats, porridge, granola), grains (Pasta, Rice & Grains, bread), canned (Tins & Jars), sauces (Sauces & Oils), snacks (Snacks), drinks (Drinks), produce (Fruit & Veg), dairy (Dairy), cold (Fridge (cold stuff)), frozen (Freezer), other (Other).`
 
 export const PROMPTS: Record<AnswerShape, string> = {
   full: `${INTRO}
@@ -29,6 +32,13 @@ ${RULES}
 - category must be one of: spices (Spices & Herbs), baking (Baking), coffee (Coffee & Tea), cereals (Cereals: breakfast cereal, oats, porridge, granola), grains (Pasta, Rice & Grains), canned (Tins & Jars), sauces (Sauces & Oils), snacks (Snacks), drinks (Drinks), produce (Fruit & Veg), dairy (Dairy), cold (Fridge (cold stuff)), frozen (Freezer), other (Other).
 - icon must be the closest match from the allowed list.
 - confidence is "low" if the line was hard to read or you had to guess what the product is.
+- If the image is not a receipt or nothing is readable, return an empty items list.`,
+  shelf: `${INTRO}
+
+Rules:
+${RULES}
+${CATEGORY_RULE}
+- unsure is true only if the line was hard to read or you had to guess what the product is.
 - If the image is not a receipt or nothing is readable, return an empty items list.`,
   slim: `${INTRO}
 
@@ -56,6 +66,26 @@ export const SCHEMAS: Record<AnswerShape, unknown> = {
             confidence: { type: 'STRING', enum: ['high', 'low'] },
           },
           required: ['name', 'quantity', 'category', 'icon', 'confidence'],
+        },
+      },
+    },
+    required: ['store', 'items'],
+  },
+  shelf: {
+    type: 'OBJECT',
+    properties: {
+      store: { type: 'STRING' },
+      items: {
+        type: 'ARRAY',
+        items: {
+          type: 'OBJECT',
+          properties: {
+            name: { type: 'STRING' },
+            quantity: { type: 'INTEGER' },
+            category: { type: 'STRING', enum: CATEGORIES },
+            unsure: { type: 'BOOLEAN' },
+          },
+          required: ['name', 'quantity', 'category'],
         },
       },
     },
