@@ -13,7 +13,8 @@
     "db:status": "node scripts/db-status.mjs",
     "check:catalog": "node scripts/check-catalog.mjs",
     "test:suggest": "node scripts/test-suggest.mjs",
-    "tune": "vite --open /tools/tune/"
+    "tune": "vite --open /tools/tune/",
+    "bench:receipts": "node scripts/bench-receipts.mjs"
   },
   "dependencies": {
     "@dicebear/core": "^10.7.0",

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ICON_SIZES } from '../config'
 import { FEEDBACK_ICONS, UI } from '../icons'
+import { lastScanTiming } from '../receipt'
 import { deleteFeedback, submitFeedback, updateFeedback, useKitchen, useMe } from '../store'
 import type { Feedback, FeedbackKind, FeedbackStatus } from '../types'
 import { Sheet, timeAgo } from './ui'
@@ -95,6 +96,8 @@ export function FeedbackSheet({
                   userAgent: navigator.userAgent,
                   viewport: `${window.innerWidth}x${window.innerHeight}`,
                   standalone: window.matchMedia('(display-mode: standalone)').matches,
+                  // Timings of a receipt scan in the last hour, so "scanning is slow" comes with numbers.
+                  ...(lastScanTiming() ? { lastScan: lastScanTiming() } : {}),
                 })
                 setMessage('')
                 setSent(true)

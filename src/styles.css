@@ -649,6 +649,8 @@ textarea { resize: vertical; padding: 12px 14px; }
 .picker-flood { position: fixed; inset: 0; z-index: 80; pointer-events: none; transition: clip-path calc(520ms * var(--motion)) cubic-bezier(.65, 0, .35, 1); }
 
 /* ───────────── Receipt scanning ───────────── */
+.rcpt-time { display: block; margin: 10px auto 0; background: none; border: 0; padding: 4px 8px; color: var(--muted); font: inherit; font-size: 12px; text-align: center; cursor: pointer; }
+.rcpt-time-detail { display: block; margin-top: 4px; line-height: 1.5; }
 @keyframes kc-scan { from { top: 0; } to { top: calc(100% - 3px); } }
 .rcpt-reading { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 6px 0 12px; }
 .rcpt-reading p { margin: 0; }

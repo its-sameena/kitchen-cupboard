@@ -41,7 +41,7 @@ The preview and the live site share one database, so **database changes go live 
 Adding a **shelf** is the common case. It needs:
 - a migration that widens the `items_category_check` constraint (see `20261108000000_cereals_shelf.sql`)
 - the shelf added in `src/data.ts` (`CATEGORIES`), `src/types.ts` (`CategoryId`), `src/icons.tsx` (`CATEGORY_ICONS`, `DEFAULT_ITEM_ICON`) and `src/theme.css` (`--shelf-<id>`)
-- the scanner's `CATEGORIES` list and prompt in `supabase/functions/scan-receipt/index.ts`
+- the scanner's `CATEGORIES` list and prompt in `supabase/functions/scan-receipt/gemini.ts`
 
 ## Edge functions
 

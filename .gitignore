@@ -6,3 +6,6 @@ dev-dist
 supabase/functions/.env
 supabase/.temp
 .vercel
+
+# Receipt photos and benchmark results (private, never committed)
+receipts/

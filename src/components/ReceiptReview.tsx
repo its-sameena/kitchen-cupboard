@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ICON_SIZES } from '../config'
 import { CATEGORIES } from '../data'
 import { ItemIcon, UI } from '../icons'
-import { scanReceipt, type ScannedItem } from '../receipt'
+import { scanReceipt, type ScannedItem, type ScanTiming } from '../receipt'
 import { addItem, haveItToo, useKitchen, useMe } from '../store'
 import type { CategoryId } from '../types'
 import { Sheet } from './ui'
@@ -13,6 +13,26 @@ interface Row extends ScannedItem {
 }
 
 const norm = (n: string) => n.trim().toLowerCase()
+
+const sec = (ms: number) => `${(ms / 1000).toFixed(1)} s`
+
+/** "Read in 4.2 s"; tap for where the time went (helps tune scanning speed). */
+function ReadIn({ t }: { t: ScanTiming }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <button type="button" className="rcpt-time" onClick={() => setOpen(!open)} aria-expanded={open}>
+      Read in {sec(t.totalMs)}
+      {open && (
+        <span className="rcpt-time-detail">
+          Photo {sec(t.photoMs)} · upload {sec(t.networkMs)} · Google {sec(t.geminiMs)}
+          {t.serverMs - t.geminiMs > 300 ? ` · server ${sec(t.serverMs - t.geminiMs)}` : ''}
+          <br />
+          {t.modelVersion || t.model} · thinking {t.usage.thinking.toLocaleString()} · answer {t.usage.output.toLocaleString()} tokens · {t.imageKB} KB photo
+        </span>
+      )}
+    </button>
+  )
+}
 
 /**
  * Photo → Gemini → a list you check and edit before anything is added.
@@ -27,6 +47,7 @@ export function ReceiptReview({ file, onClose }: { file: File; onClose: () => vo
   const [error, setError] = useState('')
   const [store, setStore] = useState('')
   const [rows, setRows] = useState<Row[]>([])
+  const [timing, setTiming] = useState<ScanTiming | null>(null)
   const retry = useRef<HTMLInputElement>(null)
 
   const findExisting = (name: string) => s.items.find((i) => norm(i.name) === norm(name))
@@ -46,6 +67,7 @@ export function ReceiptReview({ file, onClose }: { file: File; onClose: () => vo
           return
         }
         setStore(res.store)
+        setTiming(res.timing)
         setRows(
           res.items.map((it, i) => {
             const existing = findExisting(it.name)
@@ -182,6 +204,7 @@ export function ReceiptReview({ file, onClose }: { file: File; onClose: () => vo
               )
             })}
           </ul>
+          {timing && <ReadIn t={timing} />}
           <div className="rcpt-footer">
             <button className="btn btn-primary btn-block" disabled={!chosen.length} onClick={addAll}>
               {chosen.length ? `Add ${chosen.length} to cupboard` : 'Nothing selected'}

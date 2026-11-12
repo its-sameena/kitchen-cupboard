@@ -170,7 +170,7 @@ Everything the page does is plain data in `src/catalog/`. You can edit these in 
 
 The page rewrites these files in a fixed format, so comments you add inside the lists are lost on the next save. Put notes in this doc instead.
 
-When adding a new icon key by hand, also add it to `ICONS` in `supabase/functions/scan-receipt/index.ts`; the page does this for you. Then run:
+When adding a new icon key by hand, also add it to `ICONS` in `supabase/functions/scan-receipt/gemini.ts`; the page does this for you. Then run:
 
 ```bash
 npm run test:suggest   # the test names

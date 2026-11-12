@@ -9,6 +9,7 @@ A phone-first PWA for a shared kitchen: see who has what on glass shelves in a s
 | [Customising the app](docs/customising.md) | change colours, fonts, sizes, the order of tabs/shelves/items/shops, text, screen layout, shop logos |
 | [Icons and keywords](docs/icons-and-keywords.md) | fix the icon/shelf guessed from a name, add icons from Lucide/Tabler, draw your own (`npm run tune`) |
 | [Animations](docs/animations.md) | make motion faster, slower, bouncier, or change a single animation |
+| [Receipt scanning speed](docs/receipt-speed.md) | see where scan time goes, and test faster Gemini settings with your own receipts (`npm run bench:receipts`) |
 | [Shipping updates safely](docs/shipping.md) | test on a preview, change the database without losing data, deploy functions, roll back |
 | [Working with Claude](docs/working-with-claude.md) | turn an idea into the app quickly, and spend fewer tokens doing it |
 
@@ -119,6 +120,7 @@ npm run feedback      # read in-app feedback (needs SUPABASE_SERVICE_ROLE_KEY)
 npm run db:status     # which migrations your live Supabase database has
 npm run test:db       # runs the migrations in an in-memory Postgres (PGlite) and checks flows + RLS
 npm run test:suggest  # checks the icon/shelf guesser against the names in src/catalog/keyword-tests.ts
+npm run bench:receipts # time and compare Gemini setups on photos in receipts/ (uses free quota)
 npm run check:catalog # scan-receipt's shelf/icon lists match the app's; keyword rules use real icons
 npm run build
 ```

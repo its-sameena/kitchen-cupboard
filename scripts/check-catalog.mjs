@@ -8,7 +8,7 @@ import { KEYWORD_RULES } from '../src/catalog/keywords.ts'
 const appIcons = Object.keys(ITEM_ICON_DATA)
 const appCats = [...readFileSync('src/data.ts', 'utf8').matchAll(/\{ id: '([a-z]+)', label: '[^']+' \}/g)].map((m) => m[1])
 
-const fn = readFileSync('supabase/functions/scan-receipt/index.ts', 'utf8')
+const fn = readFileSync('supabase/functions/scan-receipt/gemini.ts', 'utf8')
 const fnIcons = JSON.parse(fn.match(/const ICONS = (\[.*?\])/s)[1])
 const fnCats = JSON.parse(fn.match(/const CATEGORIES = (\[.*?\])/s)[1])
 

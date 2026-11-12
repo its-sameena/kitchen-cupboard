@@ -12,7 +12,7 @@ import { parseSvg } from './svg.mjs'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
 const path = (p) => root + p
-const SCANNER = 'supabase/functions/scan-receipt/index.ts'
+const SCANNER = 'supabase/functions/scan-receipt/gemini.ts'
 
 async function body(req) {
   let s = ''
