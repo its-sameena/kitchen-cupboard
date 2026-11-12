@@ -62,3 +62,9 @@ export const STORES: StoreConfig[] = [
   { name: "Sainsbury's", label: "Sainsbury's", color: '#f06c00' },
   { name: '', label: 'Other', color: '#9a9a9a' },
 ]
+
+/**
+ * Receipt scanning: give up after this long and offer "Scan again" (ms).
+ * The scanner function keeps its own total under this (see docs/receipt-speed.md).
+ */
+export const SCAN_TIMEOUT_MS = 15_000

@@ -9,6 +9,10 @@ const MODELS = [Deno.env.get('GEMINI_MODEL'), 'gemini-flash-latest', 'gemini-fla
   .filter((m, i, a): m is string => !!m && a.indexOf(m) === i)
 /** Answer shape and thinking for every model above. See gemini.ts and `npm run bench:receipts`. */
 const SHAPE: AnswerShape = 'full'
+/** Stay under the app's 15 s limit (SCAN_TIMEOUT_MS in src/config.ts). */
+const TOTAL_BUDGET_MS = 13_000
+/** A model that hasn't answered by now is skipped for the next (faster) one. */
+const PER_MODEL_MS = 9_000
 const THINKING: Thinking = 'default'
 
 const MAX_BASE64 = 7_000_000 // ~5 MB image; the app sends ~300 KB
@@ -21,7 +25,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } })
 
 class GeminiError extends Error {
-  constructor(readonly kind: 'key' | 'quota' | 'other', readonly detail: string) {
+  constructor(readonly kind: 'key' | 'quota' | 'timeout' | 'other', readonly detail: string) {
     super(detail)
   }
 }
@@ -36,16 +40,31 @@ interface Answer {
   result: ReturnType<typeof clean>
 }
 
-async function askGemini(key: string, image: string, mime: string): Promise<Answer> {
+async function askGemini(key: string, image: string, mime: string, started: number): Promise<Answer> {
   const tried: string[] = []
   let geminiMs = 0
-  for (const model of MODELS) {
+  for (const [i, model] of MODELS.entries()) {
+    const left = TOTAL_BUDGET_MS - (performance.now() - started)
+    if (left < 1500) {
+      tried.push('out of time')
+      break
+    }
+    const limit = i === MODELS.length - 1 ? left : Math.min(left, PER_MODEL_MS)
     const t0 = performance.now()
-    const res = await fetch(endpoint(model), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify(requestBody(image, mime, { model, shape: SHAPE, thinking: THINKING })),
-    })
+    let res: Response
+    try {
+      res = await fetch(endpoint(model), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': key },
+        body: JSON.stringify(requestBody(image, mime, { model, shape: SHAPE, thinking: THINKING })),
+        signal: AbortSignal.timeout(limit),
+      })
+    } catch (e) {
+      geminiMs += performance.now() - t0
+      // Google too slow (or the connection dropped): move on to the next model.
+      tried.push(`${model}: ${e instanceof DOMException && e.name === 'TimeoutError' ? `no answer in ${Math.round(limit / 1000)} s` : String(e).slice(0, 80)}`)
+      continue
+    }
     if (res.ok) {
       const r = readResponse(await res.json())
       geminiMs += performance.now() - t0
@@ -75,7 +94,8 @@ async function askGemini(key: string, image: string, mime: string): Promise<Answ
     if (![400, 404, 429, 500, 503].includes(res.status)) break
   }
   const allQuota = tried.length > 0 && tried.every((t) => / 429 /.test(t))
-  throw new GeminiError(allQuota ? 'quota' : 'other', tried.join(' | '))
+  const slow = tried.some((t) => /no answer in|out of time/.test(t))
+  throw new GeminiError(allQuota ? 'quota' : slow ? 'timeout' : 'other', tried.join(' | '))
 }
 
 /** Placeholder or obviously truncated keys never work; catch them before calling Google. */
@@ -106,7 +126,7 @@ Deno.serve(async (req) => {
   const type = typeof mime === 'string' && /^image\/(jpeg|png|webp|heic|heif)$/.test(mime) ? mime : 'image/jpeg'
 
   try {
-    const a = await askGemini(key, image, type)
+    const a = await askGemini(key, image, type, started)
     // Timings let the app show "Read in 4.2 s" and help tune speed (see docs/receipt-speed.md).
     const meta = {
       model: a.model,
@@ -127,6 +147,7 @@ Deno.serve(async (req) => {
     if (err.kind === 'key') {
       return json({ error: 'Google rejected the Gemini API key. Check GEMINI_API_KEY is your real key from aistudio.google.com/apikey.', detail: err.detail }, 502)
     }
+    if (err.kind === 'timeout') return json({ error: 'Google is slow right now. Try scanning again in a moment.', detail: err.detail }, 504)
     if (err.kind === 'quota') return json({ error: 'Today’s free receipt scans are used up. Try again tomorrow.', detail: err.detail }, 429)
     return json({ error: 'Couldn’t read the receipt right now. Try again in a moment.', detail: err.detail }, 502)
   }

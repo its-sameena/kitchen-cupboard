@@ -23,6 +23,18 @@ After a scan, the review sheet shows **Read in 6.4 s**. Tap it for the breakdown
 
 The same numbers are written to the function logs (Supabase → Edge Functions → scan-receipt → Logs, lines starting `scan-receipt ok`). They're also attached to any feedback sent within an hour of a scan, so a housemate's "scanning is slow" arrives with the numbers. `npm run feedback` prints them.
 
+## Time limits
+
+A scan never hangs:
+
+| Limit | Where | Default | What happens |
+| --- | --- | --- | --- |
+| Whole scan, on the phone | `SCAN_TIMEOUT_MS` in `src/config.ts` | 15 s | The scan stops and the sheet offers **Scan again** (same photo) or **Try another photo**. A seconds counter shows while reading; after 8 s it says Google is slow. |
+| Inside the function, all models | `TOTAL_BUDGET_MS` in `supabase/functions/scan-receipt/index.ts` | 13 s | Stops trying and replies "Google is slow right now", which the phone shows with **Scan again**. Keep it about 2 s under the phone's limit. |
+| Per model | `PER_MODEL_MS`, same file | 9 s | A model that hasn't answered by then is skipped for the next (faster) one. |
+
+Closing the sheet also cancels the scan.
+
 ## Testing settings on your Mac
 
 1. **Add receipt photos.** Put 3–5 photos in `receipts/` in the project: a short one, a long one, a crumpled or badly lit one, and different shops. Crop out card numbers first.

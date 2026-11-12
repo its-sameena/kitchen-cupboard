@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { ICON_SIZES } from '../config'
 import { CATEGORIES } from '../data'
 import { ItemIcon, UI } from '../icons'
-import { scanReceipt, type ScannedItem, type ScanTiming } from '../receipt'
+import { scanReceipt, ScanTimeout, type ScannedItem, type ScanTiming } from '../receipt'
 import { addItem, haveItToo, useKitchen, useMe } from '../store'
 import type { CategoryId } from '../types'
 import { Sheet } from './ui'
@@ -45,6 +45,10 @@ export function ReceiptReview({ file, onClose }: { file: File; onClose: () => vo
   const [preview, setPreview] = useState('')
   const [phase, setPhase] = useState<'reading' | 'error' | 'review'>('reading')
   const [error, setError] = useState('')
+  const [timedOut, setTimedOut] = useState(false)
+  /** Bumped by "Scan again" to re-read the same photo. */
+  const [attempt, setAttempt] = useState(0)
+  const [elapsed, setElapsed] = useState(0)
   const [store, setStore] = useState('')
   const [rows, setRows] = useState<Row[]>([])
   const [timing, setTiming] = useState<ScanTiming | null>(null)
@@ -57,8 +61,13 @@ export function ReceiptReview({ file, onClose }: { file: File; onClose: () => vo
     const url = URL.createObjectURL(photo)
     setPreview(url)
     setPhase('reading')
+    setTimedOut(false)
+    setElapsed(0)
     let cancelled = false
-    scanReceipt(photo)
+    const stop = new AbortController()
+    const started = Date.now()
+    const tick = setInterval(() => setElapsed(Math.floor((Date.now() - started) / 1000)), 500)
+    scanReceipt(photo, stop.signal)
       .then((res) => {
         if (cancelled) return
         if (!res.items.length) {
@@ -79,15 +88,19 @@ export function ReceiptReview({ file, onClose }: { file: File; onClose: () => vo
       })
       .catch((e: Error) => {
         if (cancelled) return
+        setTimedOut(e instanceof ScanTimeout)
         setError(e.message)
         setPhase('error')
       })
+      .finally(() => clearInterval(tick))
     return () => {
       cancelled = true
+      stop.abort() // sheet closed or new photo: stop waiting for the old scan
+      clearInterval(tick)
       URL.revokeObjectURL(url)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [photo])
+  }, [photo, attempt])
 
   const update = (key: string, patch: Partial<Row>) => setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...patch } : r)))
   const chosen = rows.filter((r) => r.checked && r.name.trim())
@@ -127,7 +140,9 @@ export function ReceiptReview({ file, onClose }: { file: File; onClose: () => vo
           <p>
             <strong>Reading your receipt…</strong>
           </p>
-          <p className="muted small">This usually takes a few seconds.</p>
+          <p className="muted small">
+            {elapsed < 8 ? 'This usually takes a few seconds.' : 'Still reading… Google is slow right now.'} {elapsed > 0 && `${elapsed} s`}
+          </p>
         </div>
       )}
 
@@ -136,7 +151,12 @@ export function ReceiptReview({ file, onClose }: { file: File; onClose: () => vo
           <UI.warning size={40} strokeWidth={1.4} className="empty-icon" aria-hidden />
           <p style={{ whiteSpace: 'pre-line', overflowWrap: 'anywhere' }}>{error}</p>
           <div className="actions">
-            <button className="btn btn-primary btn-block" onClick={() => retry.current?.click()}>
+            {timedOut && (
+              <button className="btn btn-primary btn-block" onClick={() => setAttempt((n) => n + 1)}>
+                <UI.shuffle size={ICON_SIZES.button} /> Scan again
+              </button>
+            )}
+            <button className={'btn btn-block ' + (timedOut ? 'btn-ghost' : 'btn-primary')} onClick={() => retry.current?.click()}>
               <UI.camera size={ICON_SIZES.button} /> Try another photo
             </button>
             <button className="btn btn-ghost btn-block" onClick={onClose}>

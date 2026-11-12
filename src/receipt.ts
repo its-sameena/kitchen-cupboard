@@ -2,6 +2,7 @@
  * Receipt scanning: shrink the photo on the phone, then ask the `scan-receipt`
  * edge function (Gemini) to list the groceries on it.
  */
+import { SCAN_TIMEOUT_MS } from './config'
 import { suggestFor } from './data'
 import { DEFAULT_ITEM_ICON } from './icons'
 import { sb } from './supabase'
@@ -85,16 +86,47 @@ export async function photoToJpeg(file: File, max = 1600): Promise<string> {
   return canvas.toDataURL('image/jpeg', 0.82).split(',')[1]
 }
 
-export async function scanReceipt(file: File): Promise<ScanResult> {
+/** Thrown when a scan takes longer than SCAN_TIMEOUT_MS. */
+export class ScanTimeout extends Error {
+  constructor(message = 'Reading the receipt is taking too long. Google may be busy: try scanning again.') {
+    super(message)
+  }
+}
+
+/**
+ * Reads a receipt. Gives up after SCAN_TIMEOUT_MS (throws ScanTimeout), or when
+ * `cancel` aborts (e.g. the sheet was closed).
+ */
+export async function scanReceipt(file: File, cancel?: AbortSignal): Promise<ScanResult> {
   const t0 = performance.now()
-  const image = await photoToJpeg(file)
-  const t1 = performance.now()
-  const { data, error } = await sb.functions.invoke('scan-receipt', { body: { image, mime: 'image/jpeg' } })
+  // One signal for "time's up" or "cancelled" (AbortSignal.any isn't on older iPhones).
+  const stop = new AbortController()
+  let timedOut = false
+  const timer = setTimeout(() => {
+    timedOut = true
+    stop.abort()
+  }, SCAN_TIMEOUT_MS)
+  const onCancel = () => stop.abort()
+  cancel?.addEventListener('abort', onCancel)
+  let data: unknown, error: { message: string; context?: Response } | null = null
+  let t1 = t0
+  try {
+    const image = await photoToJpeg(file)
+    t1 = performance.now()
+    if (timedOut) throw new ScanTimeout()
+    ;({ data, error } = await sb.functions.invoke('scan-receipt', { body: { image, mime: 'image/jpeg' }, signal: stop.signal }))
+  } finally {
+    clearTimeout(timer)
+    cancel?.removeEventListener('abort', onCancel)
+  }
   const t2 = performance.now()
+  if (timedOut) throw new ScanTimeout()
+  if (cancel?.aborted) throw new Error('Cancelled')
   if (error) {
     // The function sends a friendly { error } message; dig it out of the HTTP error.
-    const ctx = (error as { context?: Response }).context
+    const ctx = error.context
     const body = ctx && typeof ctx.json === 'function' ? await ctx.json().catch(() => null) : null
+    if (ctx?.status === 504) throw new ScanTimeout(body?.error)
     if (body?.error) throw new Error(body.detail ? `${body.error}\n\nDetails: ${body.detail}` : body.error)
     if (/not found|404/i.test(error.message)) throw new Error('Receipt scanning isn’t set up yet (the scan-receipt function isn’t deployed).')
     throw new Error('Couldn’t reach the receipt scanner. Check your connection and try again.')
