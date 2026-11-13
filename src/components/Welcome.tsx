@@ -240,11 +240,16 @@ function NewProfileForm({ taken, onDone }: { taken: TakenColor[]; onDone: () => 
   )
 }
 
+/**
+ * While the app connects: the same logo, size and spot as the iOS launch screen
+ * (pwa-assets.config.ts) and the placeholder in index.html, so opening the app has no jump.
+ */
 export function Loading() {
   return (
-    <Shell>
-      <p className="muted center">Opening the cupboard…</p>
-    </Shell>
+    <div className="boot" role="status">
+      <img className="boot-logo" src="/favicon.svg" alt="" />
+      <p className="boot-text">Opening the cupboard…</p>
+    </div>
   )
 }
 
