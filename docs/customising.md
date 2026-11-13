@@ -94,23 +94,14 @@ The ASDA, Lidl and Sainsbury's logos are set up (`public/stores/asda.svg`, `lidl
 
 ## Splash screen
 
-Opening the app from the iPhone home screen goes through three steps, all showing the same logo in the same spot (30% of the screen width, centred) so there's no jump:
+Opening the app shows the logo (30% of the screen width, centred) before bringing you to the rest of the app:
 
-1. **iOS launch screen:** PNG images in `public/splash/`, one per iPhone screen size, linked in `index.html`.
-2. **Page placeholder:** a tiny bit of HTML and CSS in `index.html`, shown while the app's code downloads.
-3. **"Opening the cupboard…":** `Loading()` in `src/components/Welcome.tsx`, styled by `.boot` in `src/styles.css`. The text fades in only if opening takes more than about half a second.
+1. **While the app's code downloads:** a tiny bit of HTML and CSS in `index.html` (the `<style>` block and the `boot` element inside `#root`).
+2. **While it connects:** `Loading()` in `src/components/Welcome.tsx`, styled by `.boot` in `src/styles.css`. It keeps the logo in the same spot and fades in "Opening the cupboard…" only if opening takes more than about half a second.
 
-**To change the look** (background colour, logo size, logo image):
+To change the logo size or background, change it in both places: `30vw` and `#f3f2ee` in `index.html`, and `.boot-logo` in `src/styles.css`. The logo image is `public/favicon.svg`, which is also the app icon.
 
-1. Edit `pwa-assets.config.ts`:
-   - `SPLASH_BACKGROUND` is the colour.
-   - `SPLASH_PADDING` sets the size: 0.7 makes the logo 30% of the width.
-   - The logo comes from `public/favicon.svg`, which is also the app icon.
-2. Run `npm run icons`, then delete the landscape images it also creates: `rm public/splash/*landscape*`.
-3. If you changed the colour or size, update the same values in the `<style>` block in `index.html`, in `.boot-logo` (`30vw`) in `src/styles.css`, and in `background_color` in `vite.config.ts`.
-4. If a new iPhone size appears, add it to `DEVICES` in `pwa-assets.config.ts`, rerun, and add its `<link rel="apple-touch-startup-image">` line (printed by the command) to `index.html`.
-
-iOS only loads launch images when the app is **added to the home screen**. To see a change, delete the app from your home screen and add it again from Safari.
+Before either of these, iOS briefly shows a plain screen in the app's background colour (`background_color` in `vite.config.ts`). A custom iOS launch image was tried in v0.10.2 and removed, because it didn't line up with the page's logo.
 
 ## Doing it yourself vs asking Claude
 

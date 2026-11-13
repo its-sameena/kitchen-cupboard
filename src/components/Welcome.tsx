@@ -241,8 +241,8 @@ function NewProfileForm({ taken, onDone }: { taken: TakenColor[]; onDone: () => 
 }
 
 /**
- * While the app connects: the same logo, size and spot as the iOS launch screen
- * (pwa-assets.config.ts) and the placeholder in index.html, so opening the app has no jump.
+ * While the app connects: the same logo, size and spot as the placeholder in
+ * index.html, so opening the app has no jump.
  */
 export function Loading() {
   return (

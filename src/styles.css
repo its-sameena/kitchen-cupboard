@@ -430,7 +430,7 @@ textarea { resize: vertical; padding: 12px 14px; }
 .error-toast > span:last-child { font-size: 12px; font-weight: 500; opacity: 0.85; }
 
 /* ───────────── Setup screens ───────────── */
-/* Loading: matches the iOS launch screen (logo 30% of the width, centred). Also styled inline in index.html. */
+/* Loading: logo 30% of the width, centred; same as the placeholder styled inline in index.html. */
 .boot { position: fixed; inset: 0; display: grid; place-items: center; background: var(--bg); z-index: 1; }
 .boot-logo { width: 30vw; height: 30vw; display: block; }
 .boot-text { position: absolute; left: 0; right: 0; top: calc(50% + 15vw + 20px); margin: 0; text-align: center; color: var(--muted); font-size: 14px; }
@@ -643,7 +643,7 @@ textarea { resize: vertical; padding: 12px 14px; }
 .check.on svg path { stroke-dashoffset: 0; }
 .g-row.g-new { animation: kc-row-in calc(420ms * var(--motion)) var(--ease-soft) backwards; }
 
-/* Loading: logo stays put (it matches the launch screen); the text appears only if opening takes a moment */
+/* Loading: logo stays put (it matches index.html's placeholder); the text appears only if opening takes a moment */
 .boot-text { animation: kc-fade calc(400ms * var(--motion)) ease-out backwards; animation-delay: calc(600ms * var(--motion)); }
 
 /* Profile picker */

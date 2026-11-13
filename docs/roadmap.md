@@ -42,7 +42,7 @@ Effort: **tiny** (under an hour) · **small** (an evening) · **medium** (a few 
 
 ## Done
 
-- v0.10.2: iOS launch screen matching the app's loading screen.
+- v0.10.2: logo-first loading screen (the iOS launch-image version was tried and removed).
 - v0.10.1: shop logos on the grocery-run buttons (ASDA, Lidl, Sainsbury's).
 - v0.10: faster receipt scanning (Flash-Lite, 15 s limit with Scan again). [receipt-speed.md](receipt-speed.md)
 - v0.9: smarter icon guesses, Cereals shelf, new food icons, tuning page, Report wrong guess.
