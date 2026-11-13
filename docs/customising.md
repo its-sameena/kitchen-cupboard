@@ -45,6 +45,7 @@ npm run dev
 | **Item icons and name guessing** | `npm run tune` | See [icons-and-keywords.md](icons-and-keywords.md). |
 | **Avatars** | `src/avatar.ts`, `src/components/AvatarCreator.tsx` | DiceBear **sprouts** (CC0). Parts and colours come from the style; tabs and labels are in `AvatarCreator.tsx`. Background = profile colour. |
 | **App name, home-screen icon, status-bar colour** | `vite.config.ts` (`manifest`), `index.html`, `public/favicon.svg` | After editing `favicon.svg`, run `npm run icons` to regenerate the PNGs. |
+| **Top-bar greetings** ("Ahoy, Sam") | `src/greetings.ts` → `GREETINGS` | One is picked when the app opens, on a profile switch, and after 30+ minutes away; never between pages. Add, remove or edit lines: `{name}` is the profile name; `when: 'morning'` (or `afternoon`, `evening`, `late`) limits one to that time of day. Keep the words around the name to 18 characters or fewer, then run `npm run test:greetings`. |
 | **Text on screens** | `src/components/*.tsx` | Search for the words you see (⌘⇧F), e.g. "Who's in the kitchen". Change the text between the tags. |
 
 Phones get changes on their next launch after the app is redeployed.

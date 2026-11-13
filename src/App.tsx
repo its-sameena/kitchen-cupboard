@@ -8,6 +8,7 @@ import { KitchenSetup, Loading, Offline, ProfilePicker, SetupNeeded } from './co
 import { Avatar, Sheet, timeAgo } from './components/ui'
 import type { LucideIcon } from 'lucide-react'
 import { DEFAULT_TAB, ICON_SIZES, TABS, type TabId } from './config'
+import { currentGreeting, fillGreeting, onVisibilityChange } from './greetings'
 import { EVENT_ICONS, UI } from './icons'
 import { motionMs } from './motion'
 import { subscribePush } from './notify'
@@ -111,7 +112,7 @@ function Main() {
       <header className="topbar">
         <div className="topbar-brand">
           <img src="/favicon.svg" alt="" />
-          <span>Hi, {me.name}</span>
+          <Greeting profileId={me.id} name={me.name} />
         </div>
         <button className="icon-btn" onClick={() => setFeedbackOpen(true)} aria-label="Send feedback">
           <UI.feedback size={ICON_SIZES.button + 2} />
@@ -295,4 +296,17 @@ function TabBtn({
       <span className="tab-label">{label}</span>
     </button>
   )
+}
+
+/** "Ahoy, Sam": a different greeting each time the app is opened (see src/greetings.ts). */
+function Greeting({ profileId, name }: { profileId: string; name: string }) {
+  const [, reopened] = useState(0)
+  useEffect(() => {
+    const on = () => {
+      if (onVisibilityChange(document.hidden)) reopened((n) => n + 1)
+    }
+    document.addEventListener('visibilitychange', on)
+    return () => document.removeEventListener('visibilitychange', on)
+  }, [])
+  return <span>{fillGreeting(currentGreeting(profileId), name)}</span>
 }

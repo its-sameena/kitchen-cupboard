@@ -39,9 +39,11 @@ Effort: **tiny** (under an hour) · **small** (an evening) · **medium** (a few 
 | F | **Split the bill** | Receipts include prices: record what each person's items cost and keep a simple "who owes whom". | Medium–large. It's about money, so it needs careful design. |
 | G | **Dark mode** | Follows the phone setting. Colours are already variables in `src/theme.css`. | Small |
 | H | **Weekly kitchen digest** | Sunday notification: what ran out, what's expiring, who's shopping. | Small (after B) |
+| I | **Housemate-written greetings** | Everyone can add their own top-bar greetings in House (inside jokes), shown to the whole kitchen alongside the built-in ones. | Small–medium (needs a database table) |
 
 ## Done
 
+- v0.11.0: rotating top-bar greetings (36 approved, in `src/greetings.ts`).
 - v0.10.2: logo-first loading screen (the iOS launch-image version was tried and removed).
 - v0.10.1: shop logos on the grocery-run buttons (ASDA, Lidl, Sainsbury's).
 - v0.10: faster receipt scanning (Flash-Lite, 15 s limit with Scan again). [receipt-speed.md](receipt-speed.md)

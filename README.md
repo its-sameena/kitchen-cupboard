@@ -120,6 +120,7 @@ npm run tune          # dev-only page for item icons and name → icon/shelf key
 npm run feedback      # read in-app feedback (needs SUPABASE_SERVICE_ROLE_KEY)
 npm run db:status     # which migrations your live Supabase database has
 npm run test:db       # runs the migrations in an in-memory Postgres (PGlite) and checks flows + RLS
+npm run test:greetings # top-bar greetings: lengths, times of day, no repeats, even chances
 npm run test:suggest  # checks the icon/shelf guesser against the names in src/catalog/keyword-tests.ts
 npm run bench:receipts # time and compare Gemini setups on photos in receipts/ (uses free quota)
 npm run check:catalog # scan-receipt's shelf/icon lists match the app's; keyword rules use real icons

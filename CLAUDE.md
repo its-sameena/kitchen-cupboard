@@ -17,6 +17,7 @@ Phone-first PWA (Vite + React + TypeScript) on Supabase. See README.md for setup
 - `npx tsc --noEmit -p .` and `npm run build`.
 - Edge functions: `cd supabase/functions/<name> && deno check index.ts` (notify, scan-receipt).
 - `npm run test:suggest` after changing keywords or the guesser; add a case to `src/catalog/keyword-tests.ts` for every reported bad guess.
+- `npm run test:greetings` after editing `src/greetings.ts`.
 - `npm run check:catalog` after changing ITEM_ICONS or CATEGORIES: scan-receipt keeps its own copy.
 - Schema changes after the project is live go in a NEW migration file, never by editing the existing one.
 - Apply a new migration to the live database with `npx supabase db query --remote -f supabase/migrations/<file>.sql`. Never `supabase db push`: earlier migrations were run in the SQL editor, so the CLI's history is empty and it would re-run all of them.
