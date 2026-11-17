@@ -104,6 +104,22 @@ To change the logo size or background, change it in both places: `30vw` and `#f3
 
 Before either of these, iOS briefly shows a plain screen in the app's background colour (`background_color` in `vite.config.ts`). A custom iOS launch image was tried in v0.10.2 and removed, because it didn't line up with the page's logo.
 
+## Secret arcade
+
+Tap the logo in the top bar **7 times within 3 seconds** to open the Kitchen Arcade. It has two tiny games:
+- **Shelf Breaker:** bounce a pea off a cutting board to clear the shelves; tins take two hits; 3 lives.
+- **Stack the Shelf:** tap to drop tins; overhangs get sliced off.
+
+| To change | Where |
+| --- | --- |
+| How it's found (tap count, time window) | `SecretLogo` at the end of `src/App.tsx` |
+| Games list, names, descriptions | `GAMES` in `src/games/Arcade.tsx` |
+| Shelf Breaker rules (rows, icons, points, lives, speed) | constants at the top of `src/games/shelfBreaker.ts` |
+| Stack the Shelf rules (tin height, "perfect" margin, colours, icons) | constants at the top of `src/games/stackShelf.ts` |
+| Look | "Secret arcade" section in `src/styles.css` (games draw with the theme and shelf colours) |
+
+Best scores are kept on each phone only (`localStorage`), so nothing is stored in the database. The arcade's code is downloaded only when someone opens it.
+
 ## Doing it yourself vs asking Claude
 
 | Change | Fastest way |

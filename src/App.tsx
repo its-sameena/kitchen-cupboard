@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import Cupboard from './components/Cupboard'
 import Groceries from './components/Groceries'
 import House from './components/House'
@@ -14,6 +14,9 @@ import { motionMs } from './motion'
 import { subscribePush } from './notify'
 import { activeRun, clearError, dismissAvatarPrompt, setAvatar, eventsFor, markSeen, onNewEvents, useApp, useKitchen, useMe } from './store'
 import type { KitchenEvent } from './types'
+
+/** The hidden arcade, downloaded only when someone finds it (tap the logo 7 times). */
+const Arcade = lazy(() => import('./games/Arcade'))
 
 type Tab = TabId
 
@@ -55,6 +58,7 @@ function Main() {
   const [tab, setTab] = useState<Tab>(initialTab)
   const [inboxOpen, setInboxOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
+  const [arcadeOpen, setArcadeOpen] = useState(false)
   const { avatarPrompt } = useApp()
   const [creatorOpen, setCreatorOpen] = useState(false)
   const [toasts, setToasts] = useState<KitchenEvent[]>([])
@@ -109,9 +113,14 @@ function Main() {
 
   return (
     <div className="app">
+      {arcadeOpen && (
+        <Suspense fallback={null}>
+          <Arcade onClose={() => setArcadeOpen(false)} />
+        </Suspense>
+      )}
       <header className="topbar">
         <div className="topbar-brand">
-          <img src="/favicon.svg" alt="" />
+          <SecretLogo onFound={() => setArcadeOpen(true)} />
           <Greeting profileId={me.id} name={me.name} />
         </div>
         <button className="icon-btn" onClick={() => setFeedbackOpen(true)} aria-label="Send feedback">
@@ -309,4 +318,23 @@ function Greeting({ profileId, name }: { profileId: string; name: string }) {
     return () => document.removeEventListener('visibilitychange', on)
   }, [])
   return <span>{fillGreeting(currentGreeting(profileId), name)}</span>
+}
+
+/** The top-bar logo. Tapping it 7 times in quick succession opens the secret arcade. */
+function SecretLogo({ onFound }: { onFound: () => void }) {
+  const taps = useRef<number[]>([])
+  return (
+    <img
+      src="/favicon.svg"
+      alt=""
+      onClick={() => {
+        const now = Date.now()
+        taps.current = [...taps.current.filter((t) => now - t < 3000), now]
+        if (taps.current.length >= 7) {
+          taps.current = []
+          onFound()
+        }
+      }}
+    />
+  )
 }
