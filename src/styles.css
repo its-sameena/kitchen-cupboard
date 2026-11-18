@@ -288,16 +288,18 @@ textarea { resize: vertical; padding: 12px 14px; }
   transition: opacity calc(260ms * var(--motion)) ease;
 }
 .sheet {
-  width: 100%; max-width: 520px; max-height: 88dvh; display: flex; flex-direction: column;
+  width: 100%; max-width: 520px; max-height: min(88dvh, calc(100% - 8px)); display: flex; flex-direction: column;
   background: var(--surface); border-radius: 26px 26px 0 0;
   padding: 8px 18px calc(var(--safe-bottom) + 18px);
   animation: slideUp calc(460ms * var(--motion)) var(--ease-sheet) backwards;
   transition: transform calc(380ms * var(--motion)) var(--ease-sheet);
 }
+/* Keyboard open: the backdrop already ends at the keyboard, so no home-bar padding */
+.sheet.keyboard { max-height: calc(100% - 8px); padding-bottom: 12px; }
 .sheet-handle { width: 36px; height: 5px; border-radius: 3px; background: #d8d7d1; margin: 0 auto; flex: none; }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .sheet-head .icon-btn { background: var(--surface-2); width: 34px; height: 34px; }
-.sheet-body { overflow-y: auto; overscroll-behavior: contain; padding-bottom: 4px; }
+.sheet-body { overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; padding-bottom: 4px; }
 @keyframes slideUp { from { transform: translateY(100%); } to { transform: none; } }
 @keyframes fade { from { opacity: 0; } }
 
@@ -309,11 +311,36 @@ textarea { resize: vertical; padding: 12px 14px; }
 .owner-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .owner-list li { display: flex; align-items: center; gap: 8px; padding: 4px 12px 4px 4px; border-radius: 999px; background: var(--surface-2); font-weight: 600; }
 
-.item-form .name-row { display: flex; gap: 12px; align-items: flex-end; }
+.item-form .name-row { display: flex; gap: 12px; align-items: center; margin-bottom: 12px; }
+.item-form .name-row .field { margin-bottom: 0; }
+/* The big icon next to the name: tap it to change the icon */
 .icon-preview {
-  width: 56px; height: 56px; display: grid; place-items: center; border-radius: var(--radius-sm);
-  background: var(--surface-2); color: var(--ink); margin-bottom: 14px; flex: none;
+  position: relative; width: 52px; height: 52px; display: grid; place-items: center; border-radius: var(--radius-sm);
+  background: var(--surface-2); color: var(--ink); flex: none;
 }
+.icon-preview.on { box-shadow: inset 0 0 0 2px var(--ink); }
+.icon-preview:disabled { opacity: 1; }
+.icon-preview-edit {
+  position: absolute; right: -4px; bottom: -4px; width: 20px; height: 20px; border-radius: 50%;
+  display: grid; place-items: center; background: var(--surface); color: var(--muted); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+/* One swipeable row of shelves (fades at the edges to hint there's more) */
+.cat-row {
+  display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 0 14px; padding: 2px 0;
+  overscroll-behavior-x: contain;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+}
+.cat-row::-webkit-scrollbar { display: none; }
+.cat-row .cat-chip { flex: none; white-space: nowrap; }
+/* Icon picker: three rows that scroll sideways */
+.icon-row {
+  display: grid; grid-auto-flow: column; grid-template-rows: repeat(3, 44px); grid-auto-columns: 44px; gap: 4px;
+  overflow-x: auto; scrollbar-width: none; margin: 0 0 14px;
+}
+.icon-row::-webkit-scrollbar { display: none; }
+.icon-row button { border-radius: 10px; display: grid; place-items: center; color: var(--ink); background: var(--surface-2); }
+.icon-row button.on { background: var(--accent); color: var(--accent-ink); }
 .icon-picker summary { cursor: pointer; padding: 6px 0; display: flex; align-items: center; gap: 6px; }
 .icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr)); gap: 4px; margin-top: 6px; }
 .icon-grid button { height: 44px; border-radius: 10px; display: grid; place-items: center; color: var(--ink); }

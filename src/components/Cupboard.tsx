@@ -350,12 +350,24 @@ export function ItemForm({
   /** Did the user pick an icon or shelf in this form? Then they may report the guess as wrong. */
   const [picked, setPicked] = useState(false)
   const [reported, setReported] = useState<'no' | 'sending' | 'yes'>('no')
+  /** The icon grid opens when you tap the big icon next to the name. */
+  const [iconsOpen, setIconsOpen] = useState(false)
+  const shelfRow = useRef<HTMLDivElement>(null)
 
   const suggestion = suggestFor(name, existing)
   const shownCatForIcon = touchedCat ? category : suggestion?.category ?? category
   const shownIcon = touchedIcon ? icon : suggestion?.icon ?? DEFAULT_ITEM_ICON[shownCatForIcon]
   const shownCat = touchedCat ? category : suggestion?.category ?? category
   const match = existing?.find((i) => i.name.trim().toLowerCase() === name.trim().toLowerCase())
+
+  // Keep the chosen (or guessed) shelf in view in the scrolling row.
+  useEffect(() => {
+    const row = shelfRow.current
+    const chip = row?.querySelector<HTMLElement>('.cat-chip.on')
+    if (!row || !chip) return
+    const offset = chip.getBoundingClientRect().left - row.getBoundingClientRect().left + row.scrollLeft
+    row.scrollTo({ left: Math.max(0, offset - (row.clientWidth - chip.offsetWidth) / 2), behavior: 'smooth' })
+  }, [shownCat, iconsOpen])
 
   return (
     <form
@@ -367,18 +379,35 @@ export function ItemForm({
       }}
     >
       <div className="name-row">
-        <span className="icon-preview">
+        <button
+          type="button"
+          className={'icon-preview' + (iconsOpen ? ' on' : '')}
+          onClick={() => setIconsOpen(!iconsOpen)}
+          aria-label={iconsOpen ? 'Close icon picker' : 'Change icon'}
+          aria-expanded={iconsOpen}
+          disabled={!!match}
+        >
           <ItemIcon name={shownIcon} size={30} strokeWidth={1.6} />
-        </span>
+          {!match && (
+            <span className="icon-preview-edit" aria-hidden>
+              <UI.edit size={11} strokeWidth={2.5} />
+            </span>
+          )}
+        </button>
         <label className="field grow">
-          <span>Item name</span>
           <input
             autoFocus={!initial.name}
             value={name}
             maxLength={32}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Paprika, Oat milk, Coffee beans"
+            placeholder="Item name, e.g. Paprika"
+            aria-label="Item name"
             list="known-items"
+            // Not a person's name: stops iOS offering "AutoFill Contact".
+            name="cupboard-item"
+            autoComplete="off"
+            autoCapitalize="sentences"
+            enterKeyHint="done"
           />
           {existing && (
             <datalist id="known-items">
@@ -400,30 +429,8 @@ export function ItemForm({
 
       {!match && (
         <>
-          <div className="field">
-            <span>Shelf</span>
-            <div className="cat-grid">
-              {CATEGORIES.map((c) => (
-                <button
-                  type="button"
-                  key={c.id}
-                  className={'cat-chip' + (shownCat === c.id ? ' on' : '')}
-                  onClick={() => {
-                    setCategory(c.id)
-                    setTouchedCat(true)
-                    setPicked(true)
-                  }}
-                >
-                  <ShelfIcon id={c.id} /> {c.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <details className="field icon-picker">
-            <summary>
-              Change icon <ItemIcon name={shownIcon} size={16} />
-            </summary>
-            <div className="icon-grid">
+          {iconsOpen ? (
+            <div className="icon-row" role="group" aria-label="Icon">
               {Object.entries(ITEM_ICONS).map(([key, { icon: Icon, label }]) => (
                 <button
                   type="button"
@@ -435,13 +442,32 @@ export function ItemForm({
                     setIcon(key)
                     setTouchedIcon(true)
                     setPicked(true)
+                    setIconsOpen(false)
                   }}
                 >
                   <Icon size={ICON_SIZES.list} strokeWidth={1.6} />
                 </button>
               ))}
             </div>
-          </details>
+          ) : (
+            <div className="cat-row" ref={shelfRow} role="group" aria-label="Shelf">
+              {CATEGORIES.map((c) => (
+                <button
+                  type="button"
+                  key={c.id}
+                  className={'cat-chip' + (shownCat === c.id ? ' on' : '')}
+                  aria-pressed={shownCat === c.id}
+                  onClick={() => {
+                    setCategory(c.id)
+                    setTouchedCat(true)
+                    setPicked(true)
+                  }}
+                >
+                  <ShelfIcon id={c.id} /> {c.label}
+                </button>
+              ))}
+            </div>
+          )}
           {picked && name.trim() && (suggestion?.icon !== shownIcon || suggestion?.category !== shownCat) && (
             <ReportGuess
               name={name.trim()}

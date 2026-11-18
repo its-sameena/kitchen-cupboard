@@ -50,17 +50,36 @@ export function Sheet({
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
+  // Sit on top of the on-screen keyboard: follow the visible part of the screen
+  // (visualViewport), which shrinks when the keyboard opens.
+  const [view, setView] = useState<{ top: number; height: number; keyboard: boolean } | null>(null)
+  useEffect(() => {
+    const vv = window.visualViewport
+    if (!open || !vv) return
+    const update = () => setView({ top: vv.offsetTop, height: vv.height, keyboard: window.innerHeight - vv.height > 120 })
+    update()
+    vv.addEventListener('resize', update)
+    vv.addEventListener('scroll', update)
+    return () => {
+      vv.removeEventListener('resize', update)
+      vv.removeEventListener('scroll', update)
+    }
+  }, [open])
+
   if (!open) return null
 
   const dragging = drag.current !== null
   return (
     <div
       className={'sheet-backdrop' + (closing ? ' closing' : '')}
-      style={dragY > 0 && !closing ? { opacity: Math.max(0.3, 1 - dragY / 500) } : undefined}
+      style={{
+        ...(view ? { top: view.top, bottom: 'auto', height: view.height } : {}),
+        ...(dragY > 0 && !closing ? { opacity: Math.max(0.3, 1 - dragY / 500) } : {}),
+      }}
       onClick={close}
     >
       <div
-        className={'sheet' + (closing ? ' closing' : '') + (dragging ? ' dragging' : '')}
+        className={'sheet' + (closing ? ' closing' : '') + (dragging ? ' dragging' : '') + (view?.keyboard ? ' keyboard' : '')}
         role="dialog"
         aria-modal="true"
         style={dragY > 0 ? { transform: `translateY(${dragY}px)` } : undefined}
