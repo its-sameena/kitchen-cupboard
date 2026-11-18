@@ -41,6 +41,24 @@ Effort: **tiny** (under an hour) · **small** (an evening) · **medium** (a few 
 | H | **Weekly kitchen digest** | Sunday notification: what ran out, what's expiring, who's shopping. | Small (after B) |
 | I | **Housemate-written greetings** | Everyone can add their own top-bar greetings in House (inside jokes), shown to the whole kitchen alongside the built-in ones. | Small–medium (needs a database table) |
 
+## Backups and data safety
+
+Discussed November 2026. Code and the live app are already safe: git and GitHub keep every version, and Vercel can roll back to any earlier deployment. The data in Supabase is the weak spot. The free plan, as far as we know, has no downloadable backups; check Project Settings → Database → Backups.
+
+| # | Idea | What it gives you | Effort |
+| --- | --- | --- | --- |
+| S1 | **Keys in a password manager** | Copies of `.env.local` and `supabase/functions/.env`. The VAPID keys matter most: losing them breaks every phone's notifications. | Tiny (you) |
+| S2 | **`npm run backup`** | Saves every table to dated JSON files in a gitignored `backups/` folder on your Mac (service key, read-only). Run weekly and before any database change. Comes with `docs/backups.md` on how to restore one item, one kitchen, or everything. | Small |
+| S3 | **Release tags** | `git tag v0.x.y` per release, so "go back to 0.11" is one command (same as #9). | Tiny |
+| S4 | **Automatic archive of deleted rows** | A database rule copies anything deleted (items, grocery entries, members) into an archive table, so even a bug or bad command can't lose data for good. | Small (migration) |
+| S5 | **Undo** | "Removed Milk · Undo" for a few seconds after removing something. | Small |
+| S6 | **Recently deleted** | Removed items go to a hidden bin for 30 days, restorable from House. | Small–medium (after S4) |
+| S7 | **Nightly automatic backup** | GitHub Actions runs S2 every night. The repo is public, so backups must be stored privately or encrypted. | Small |
+| S8 | **Supabase paid plan** | Daily backups for several days, optional point-in-time recovery (rewind to any moment). | Costs money |
+| S9 | **Restore drill** | Restore a backup into a throwaway Supabase project once, to prove it works. | Small |
+
+Recommended: S1, S2 and S3 now; then S4 + S5; S9 once.
+
 ## Done
 
 - v0.11.0: rotating top-bar greetings (36 approved, in `src/greetings.ts`).
