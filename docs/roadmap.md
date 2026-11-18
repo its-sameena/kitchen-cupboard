@@ -39,6 +39,7 @@ Effort: **tiny** (under an hour) · **small** (an evening) · **medium** (a few 
 | F | **Split the bill** | Receipts include prices: record what each person's items cost and keep a simple "who owes whom". | Medium–large. It's about money, so it needs careful design. |
 | G | **Dark mode** | Follows the phone setting. Colours are already variables in `src/theme.css`. | Small |
 | H | **Weekly kitchen digest** | Sunday notification: what ran out, what's expiring, who's shopping. | Small (after B) |
+| J | **Laptop and web layout** | On wide screens (about 900 px and up) the app switches to a desktop layout; phones stay exactly as they are. Preferred layout: a **dashboard** with a left sidebar (logo, greeting, pages, activity), the cupboard in the middle with wide shelves, and the grocery list plus any live run always visible on the right. Alternatives: two panes (cupboard + switchable side panel) or just wider shelves. Extras: side panels instead of bottom sheets, keyboard shortcuts (N, /, G, Esc), hover details, drag and drop to the grocery list, drop a receipt photo to scan, arcade with keyboard controls. Build in steps: layout shell → side-by-side cupboard and groceries → extras. | Medium–large |
 | I | **Housemate-written greetings** | Everyone can add their own top-bar greetings in House (inside jokes), shown to the whole kitchen alongside the built-in ones. | Small–medium (needs a database table) |
 
 ## Backups and data safety
