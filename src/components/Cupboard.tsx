@@ -353,6 +353,17 @@ export function ItemForm({
   /** The icon grid opens when you tap the big icon next to the name. */
   const [iconsOpen, setIconsOpen] = useState(false)
   const shelfRow = useRef<HTMLDivElement>(null)
+  /** First positioning of the shelf row is instant; later ones (as you type) glide. */
+  const rowPlaced = useRef(false)
+  /** Which edges of the shelf row have more chips beyond them (for the fades). */
+  const [rowEdges, setRowEdges] = useState({ left: false, right: true })
+  const measureRow = () => {
+    const row = shelfRow.current
+    if (!row) return
+    const left = row.scrollLeft > 4
+    const right = row.scrollLeft + row.clientWidth < row.scrollWidth - 4
+    setRowEdges((e) => (e.left === left && e.right === right ? e : { left, right }))
+  }
 
   const suggestion = suggestFor(name, existing)
   const shownCatForIcon = touchedCat ? category : suggestion?.category ?? category
@@ -366,8 +377,14 @@ export function ItemForm({
     const chip = row?.querySelector<HTMLElement>('.cat-chip.on')
     if (!row || !chip) return
     const offset = chip.getBoundingClientRect().left - row.getBoundingClientRect().left + row.scrollLeft
-    row.scrollTo({ left: Math.max(0, offset - (row.clientWidth - chip.offsetWidth) / 2), behavior: 'smooth' })
+    row.scrollTo({ left: Math.max(0, offset - (row.clientWidth - chip.offsetWidth) / 2), behavior: rowPlaced.current ? 'smooth' : 'instant' })
+    rowPlaced.current = true
+    measureRow()
   }, [shownCat, iconsOpen])
+  // The row is re-created when the icon picker closes: place it instantly again.
+  useEffect(() => {
+    if (iconsOpen) rowPlaced.current = false
+  }, [iconsOpen])
 
   return (
     <form
@@ -400,11 +417,12 @@ export function ItemForm({
             value={name}
             maxLength={32}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Item name, e.g. Paprika"
-            aria-label="Item name"
+            // iOS offers "AutoFill Contact" whenever a field's placeholder, label or
+            // name mentions "name", so none of them do.
+            placeholder="e.g. Paprika, Oat milk"
+            aria-label="What is it?"
             list="known-items"
-            // Not a person's name: stops iOS offering "AutoFill Contact".
-            name="cupboard-item"
+            name="pantry-thing"
             autoComplete="off"
             autoCapitalize="sentences"
             enterKeyHint="done"
@@ -450,7 +468,13 @@ export function ItemForm({
               ))}
             </div>
           ) : (
-            <div className="cat-row" ref={shelfRow} role="group" aria-label="Shelf">
+            <div
+              className={'cat-row' + (rowEdges.left ? ' more-left' : '') + (rowEdges.right ? ' more-right' : '')}
+              ref={shelfRow}
+              onScroll={measureRow}
+              role="group"
+              aria-label="Shelf"
+            >
               {CATEGORIES.map((c) => (
                 <button
                   type="button"
@@ -468,7 +492,7 @@ export function ItemForm({
               ))}
             </div>
           )}
-          {picked && name.trim() && (suggestion?.icon !== shownIcon || suggestion?.category !== shownCat) && (
+          {picked && worthReporting(name, !!suggestion) && (suggestion?.icon !== shownIcon || suggestion?.category !== shownCat) && (
             <ReportGuess
               name={name.trim()}
               guessed={suggestion}
@@ -490,6 +514,12 @@ export function ItemForm({
       )}
     </form>
   )
+}
+
+/** Only offer "Report wrong guess" when the app guessed, or the name looks like a real word (not "kkj"). */
+const worthReporting = (name: string, guessed: boolean) => {
+  const n = name.trim()
+  return guessed ? n.length > 0 : n.length >= 3 && /[aeiouy]/i.test(n)
 }
 
 /**

@@ -10,6 +10,23 @@ import type { Item, User } from '../types'
  * Bottom sheet. Springs up when opened; closing (X, backdrop, Escape, or
  * dragging the handle down) slides it away before calling onClose.
  */
+// Page lock shared by every open sheet: the body is pinned in place (overflow: hidden
+// alone doesn't stop iOS scrolling it to show a focused field), then put back exactly.
+let locks = 0
+let savedY = 0
+function lockPage() {
+  if (locks++ > 0) return
+  savedY = window.scrollY
+  Object.assign(document.body.style, { position: 'fixed', top: `-${savedY}px`, left: '0', right: '0', width: '100%' })
+  document.body.classList.add('no-scroll')
+}
+function unlockPage() {
+  if (--locks > 0) return
+  Object.assign(document.body.style, { position: '', top: '', left: '', right: '', width: '' })
+  document.body.classList.remove('no-scroll')
+  window.scrollTo(0, savedY)
+}
+
 export function Sheet({
   open,
   onClose,
@@ -41,22 +58,18 @@ export function Sheet({
     if (!open) return
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close()
     window.addEventListener('keydown', onKey)
-    document.body.classList.add('no-scroll')
-    return () => {
-      window.removeEventListener('keydown', onKey)
-      document.body.classList.remove('no-scroll')
-    }
+    return () => window.removeEventListener('keydown', onKey)
   }, [open, close])
 
   useEffect(() => () => clearTimeout(timer.current), [])
 
-  // Sit on top of the on-screen keyboard: follow the visible part of the screen
-  // (visualViewport), which shrinks when the keyboard opens.
-  const [view, setView] = useState<{ top: number; height: number; keyboard: boolean } | null>(null)
+  // Rise above the on-screen keyboard. The visible part of the screen (visualViewport)
+  // shrinks when it opens; the sheet slides up by the difference (smoothed in CSS).
+  const [keyboard, setKeyboard] = useState(0)
   useEffect(() => {
     const vv = window.visualViewport
     if (!open || !vv) return
-    const update = () => setView({ top: vv.offsetTop, height: vv.height, keyboard: window.innerHeight - vv.height > 120 })
+    const update = () => setKeyboard(Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop)))
     update()
     vv.addEventListener('resize', update)
     vv.addEventListener('scroll', update)
@@ -66,6 +79,13 @@ export function Sheet({
     }
   }, [open])
 
+  // Freeze the page behind (iOS otherwise scrolls it when the keyboard opens).
+  useEffect(() => {
+    if (!open) return
+    lockPage()
+    return unlockPage
+  }, [open])
+
   if (!open) return null
 
   const dragging = drag.current !== null
@@ -73,13 +93,13 @@ export function Sheet({
     <div
       className={'sheet-backdrop' + (closing ? ' closing' : '')}
       style={{
-        ...(view ? { top: view.top, bottom: 'auto', height: view.height } : {}),
+        paddingBottom: keyboard,
         ...(dragY > 0 && !closing ? { opacity: Math.max(0.3, 1 - dragY / 500) } : {}),
       }}
       onClick={close}
     >
       <div
-        className={'sheet' + (closing ? ' closing' : '') + (dragging ? ' dragging' : '') + (view?.keyboard ? ' keyboard' : '')}
+        className={'sheet' + (closing ? ' closing' : '') + (dragging ? ' dragging' : '') + (keyboard > 120 ? ' keyboard' : '')}
         role="dialog"
         aria-modal="true"
         style={dragY > 0 ? { transform: `translateY(${dragY}px)` } : undefined}

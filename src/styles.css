@@ -285,17 +285,20 @@ textarea { resize: vertical; padding: 12px 14px; }
   position: fixed; inset: 0; z-index: 50; background: rgba(10, 10, 10, 0.35);
   display: flex; align-items: flex-end; justify-content: center;
   animation: kc-fade calc(220ms * var(--motion)) ease-out backwards;
-  transition: opacity calc(260ms * var(--motion)) ease;
+  /* padding-bottom = keyboard height (set in Sheet): eased like the iOS keyboard */
+  transition: opacity calc(260ms * var(--motion)) ease, padding-bottom calc(320ms * var(--motion)) cubic-bezier(.2, .9, .3, 1);
 }
 .sheet {
-  width: 100%; max-width: 520px; max-height: min(88dvh, calc(100% - 8px)); display: flex; flex-direction: column;
+  position: relative; width: 100%; max-width: 520px; max-height: min(88dvh, calc(100% - 8px)); display: flex; flex-direction: column;
   background: var(--surface); border-radius: 26px 26px 0 0;
   padding: 8px 18px calc(var(--safe-bottom) + 18px);
   animation: slideUp calc(460ms * var(--motion)) var(--ease-sheet) backwards;
   transition: transform calc(380ms * var(--motion)) var(--ease-sheet);
 }
-/* Keyboard open: the backdrop already ends at the keyboard, so no home-bar padding */
-.sheet.keyboard { max-height: calc(100% - 8px); padding-bottom: 12px; }
+/* Keyboard open: the sheet sits on it, so no home-bar padding */
+.sheet.keyboard { padding-bottom: 12px; }
+/* The sheet's white carries on below it (behind the keyboard / Safari's bar): no hard bottom edge */
+.sheet::after { content: ''; position: absolute; left: 0; right: 0; top: calc(100% - 1px); height: 100vh; background: var(--surface); pointer-events: none; }
 .sheet-handle { width: 36px; height: 5px; border-radius: 3px; background: #d8d7d1; margin: 0 auto; flex: none; }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
 .sheet-head .icon-btn { background: var(--surface-2); width: 34px; height: 34px; }
@@ -326,13 +329,16 @@ textarea { resize: vertical; padding: 12px 14px; }
 }
 /* One swipeable row of shelves (fades at the edges to hint there's more) */
 .cat-row {
+  --fade-l: 0px; --fade-r: 0px;
   display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 0 14px; padding: 2px 0;
-  overscroll-behavior-x: contain;
-  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
-  mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+  overscroll-behavior-x: contain; scroll-snap-type: x proximity;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent 100%);
 }
+.cat-row.more-left { --fade-l: 28px; }
+.cat-row.more-right { --fade-r: 28px; }
 .cat-row::-webkit-scrollbar { display: none; }
-.cat-row .cat-chip { flex: none; white-space: nowrap; }
+.cat-row .cat-chip { flex: none; white-space: nowrap; scroll-snap-align: center; transition: background-color calc(180ms * var(--motion)) ease, color calc(180ms * var(--motion)) ease; }
 /* Icon picker: three rows that scroll sideways */
 .icon-row {
   display: grid; grid-auto-flow: column; grid-template-rows: repeat(3, 44px); grid-auto-columns: 44px; gap: 4px;
