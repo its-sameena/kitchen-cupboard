@@ -1,7 +1,7 @@
 -- Only needed if you ran an EARLIER version of the migration in this project.
 -- Removes all Kitchen Cupboard tables and functions (and their data!) so the
 -- current migration can be run fresh. Run in the SQL Editor, then run the migration.
-drop table if exists public.feedback, public.push_subscriptions, public.events, public.grocery,
+drop table if exists public.run_items, public.feedback, public.push_subscriptions, public.events, public.grocery,
   public.runs, public.items, public.members, public.devices, public.kitchens cascade;
 do $$
 declare f record;

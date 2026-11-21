@@ -127,6 +127,18 @@ assert.match((await one(P1, `select body from events where id = $1`, [end.e])).b
 assert.deepEqual((await one(P1, `select owners from items where name = 'Salt'`)).owners, [A], 'request → requester')
 assert.deepEqual((await one(P1, `select owners from items where name = 'Oat milk'`)).owners, [J])
 assert.deepEqual((await as(P1, `select name from grocery`)).map((r) => r.name), ['Bin bags'])
+// Each run remembers what was bought, who it went to, and how many
+const lastRun = await one(P1, `select id, item_count from runs order by started_at desc limit 1`)
+assert.equal(lastRun.item_count, 2)
+const bought = await as(P1, `select name, for_user, requested from run_items where run_id = $1 order by name`, [lastRun.id])
+assert.deepEqual(bought.map((b) => [b.name, b.for_user, b.requested]), [['Oat milk', J, true], ['Salt', A, true]])
+assert.equal((await as(OUT, `select * from run_items`)).length, 0, 'other kitchens cannot read run items')
+await fails(P1, `insert into run_items (run_id, kitchen_id, name) values ($1, $2, 'Fake')`, [lastRun.id, k], /permission denied/)
+await fails(P1, `delete from run_items where run_id = $1`, [lastRun.id], /permission denied/)
+// A run where nothing was bought records 0 (not NULL, which means "before items were recorded")
+await as(P1, `select start_run($1, '')`, [A])
+await as(P1, `select end_run($1)`, [A])
+assert.equal((await one(P1, `select item_count from runs order by started_at desc limit 1`)).item_count, 0)
 
 // Bought outside a run
 await as(P1, `select mark_bought($1, (select id from grocery limit 1))`, [A])

@@ -62,6 +62,19 @@ export interface GroceryRun {
   store: string
   startedAt: number
   endedAt?: number
+  /** Items bought. null = finished before items were recorded (no details to show). */
+  itemCount: number | null
+}
+
+/** One item bought on a grocery run (the run details screen). */
+export interface RunItem {
+  name: string
+  icon: string
+  category: CategoryId
+  /** Who it went to in the cupboard: the requester, or the shopper. */
+  forUser?: string
+  /** A housemate asked for it during the run. */
+  requested: boolean
 }
 
 export type EventType =

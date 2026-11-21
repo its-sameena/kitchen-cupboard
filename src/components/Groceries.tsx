@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motionMs } from '../motion'
 import { categoryById, suggestFor } from '../data'
 import {
   activeRun,
   addGrocery,
   endRun,
+  loadRunItems,
   markBought,
   removeGrocery,
   requestEntry,
@@ -14,7 +15,7 @@ import {
   useKitchen,
   useMe,
 } from '../store'
-import type { GroceryEntry, User } from '../types'
+import type { GroceryEntry, GroceryRun, RunItem, User } from '../types'
 import { ICON_SIZES, STORES, type StoreConfig } from '../config'
 import { ItemIcon, UI } from '../icons'
 import { Avatar, Sheet, timeAgo } from './ui'
@@ -308,45 +309,138 @@ function StoreButton({
 function RecentRuns() {
   const s = useKitchen()
   const [open, setOpen] = useState(false)
+  /** The run whose items are shown, or null for the list of runs. */
+  const [viewing, setViewing] = useState<string | null>(null)
   const past = s.runs.filter((r) => r.endedAt).reverse()
   if (!past.length) return null
+  const run = past.find((r) => r.id === viewing)
   return (
     <>
       <button className="recent-link" onClick={() => setOpen(true)}>
         Show recent runs
       </button>
-      <Sheet open={open} onClose={() => setOpen(false)} title="Recent runs">
-        <ul className="recent-runs">
-          {past.map((r) => {
-            const u = s.users.find((x) => x.id === r.shopperId)
-            const store = STORES.find((st) => st.name && st.name === r.store)
-            const mins = Math.max(1, Math.round((r.endedAt! - r.startedAt) / 60000))
+      <Sheet
+        open={open}
+        onClose={() => {
+          setOpen(false)
+          setViewing(null)
+        }}
+        title={run ? 'Run details' : 'Recent runs'}
+      >
+        {run ? (
+          <RunDetails run={run} onBack={() => setViewing(null)} />
+        ) : (
+          <ul className="recent-runs">
+            {past.map((r) => {
+              // Runs from before items were recorded have no details to open.
+              const hasDetails = r.itemCount !== null
+              const row = (
+                <>
+                  <RunSummary run={r} />
+                  <span className="muted small">{timeAgo(r.endedAt!)}</span>
+                  {hasDetails && <UI.chevron size={18} className="run-chevron" aria-hidden />}
+                </>
+              )
+              return (
+                <li key={r.id}>
+                  {hasDetails ? (
+                    <button className="run-row" onClick={() => setViewing(r.id)} aria-label={`See what was bought on this run`}>
+                      {row}
+                    </button>
+                  ) : (
+                    <div className="run-row">{row}</div>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        )}
+      </Sheet>
+    </>
+  )
+}
+
+const itemsLabel = (n: number) => `${n} item${n === 1 ? '' : 's'}`
+
+/** Avatar, "Sam at ASDA", and "Sat 21 Nov · 25 min · 12 items" (count only for runs that recorded it). */
+function RunSummary({ run }: { run: GroceryRun }) {
+  const s = useKitchen()
+  const u = s.users.find((x) => x.id === run.shopperId)
+  const store = STORES.find((st) => st.name && st.name === run.store)
+  const mins = Math.max(1, Math.round((run.endedAt! - run.startedAt) / 60000))
+  return (
+    <>
+      <Avatar user={u} size={34} />
+      <div className="run-text">
+        <strong>
+          {u?.name ?? 'Someone'}
+          {run.store ? (
+            <>
+              {' at '}
+              <span className="store-tag" style={{ '--store': store?.color ?? 'var(--muted)' } as React.CSSProperties}>
+                {run.store}
+              </span>
+            </>
+          ) : null}
+        </strong>
+        <span className="muted small">
+          {new Date(run.startedAt).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })} ·{' '}
+          {mins < 60 ? `${mins} min` : `${Math.round(mins / 6) / 10} h`}
+          {run.itemCount !== null && ` · ${itemsLabel(run.itemCount)}`}
+        </span>
+      </div>
+    </>
+  )
+}
+
+/** Everything bought on one run, and who each item went to. */
+function RunDetails({ run, onBack }: { run: GroceryRun; onBack: () => void }) {
+  const s = useKitchen()
+  const [items, setItems] = useState<RunItem[] | null>(null)
+  const [error, setError] = useState('')
+  useEffect(() => {
+    let live = true
+    loadRunItems(run.id).then(
+      (list) => live && setItems(list),
+      () => live && setError('Couldn’t load this run. Check your connection and try again.'),
+    )
+    return () => {
+      live = false
+    }
+  }, [run.id])
+  const nameOf = (id?: string) => s.users.find((u) => u.id === id)?.name ?? 'someone'
+  return (
+    <div className="run-details">
+      <button className="link run-back" onClick={onBack}>
+        <UI.chevronLeft size={16} /> Recent runs
+      </button>
+      <div className="run-head">
+        <RunSummary run={run} />
+      </div>
+      {error && <p className="muted small">{error}</p>}
+      {!items && !error && <p className="muted small">Loading…</p>}
+      {items && items.length === 0 && <p className="muted small">Nothing was picked up on this run.</p>}
+      {items && items.length > 0 && (
+        <ul className="run-items">
+          {items.map((it, i) => {
+            const person = s.users.find((u) => u.id === it.forUser)
             return (
-              <li key={r.id}>
-                <Avatar user={u} size={34} />
-                <div>
-                  <strong>
-                    {u?.name ?? 'Someone'}
-                    {r.store ? (
-                      <>
-                        {' at '}
-                        <span className="store-tag" style={{ '--store': store?.color ?? 'var(--muted)' } as React.CSSProperties}>
-                          {r.store}
-                        </span>
-                      </>
-                    ) : null}
-                  </strong>
+              <li key={i} style={{ '--shelf': `var(--shelf-${it.category})` } as React.CSSProperties}>
+                <span className="run-item-icon">
+                  <ItemIcon name={it.icon} size={ICON_SIZES.list} strokeWidth={1.7} />
+                </span>
+                <div className="run-text">
+                  <strong>{it.name}</strong>
                   <span className="muted small">
-                    {new Date(r.startedAt).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })} ·{' '}
-                    {mins < 60 ? `${mins} min` : `${Math.round(mins / 6) / 10} h`}
+                    {categoryById(it.category).label} · {it.requested ? `asked for by ${nameOf(it.forUser)}` : `for ${nameOf(it.forUser)}`}
                   </span>
                 </div>
-                <span className="muted small">{timeAgo(r.endedAt!)}</span>
+                {person && <Avatar user={person} size={26} />}
               </li>
             )
           })}
         </ul>
-      </Sheet>
-    </>
+      )}
+    </div>
   )
 }

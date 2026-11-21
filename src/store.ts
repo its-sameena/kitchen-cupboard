@@ -14,7 +14,7 @@ import { useSyncExternalStore } from 'react'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import { isConfigured, sb } from './supabase'
 import { normalizeAvatar, type AvatarConfig } from './avatar'
-import type { CategoryId, FeedbackKind, GroceryEntry, Item, KitchenEvent, KitchenState, User } from './types'
+import type { CategoryId, FeedbackKind, GroceryEntry, Item, KitchenEvent, KitchenState, RunItem, User } from './types'
 
 export type Status = 'unconfigured' | 'loading' | 'offline' | 'no_kitchen' | 'pick_profile' | 'ready'
 
@@ -158,6 +158,7 @@ async function fetchKitchen(): Promise<KitchenState | null> {
       store: r.store,
       startedAt: ms(r.started_at),
       endedAt: r.ended_at ? ms(r.ended_at) : undefined,
+      itemCount: typeof r.item_count === 'number' ? r.item_count : null,
     })),
     events: events.data!.reverse().map((e) => ({
       id: e.id,
@@ -466,6 +467,23 @@ export function markBought(entryId: string) {
 }
 
 // ───────────────────────── grocery runs ─────────────────────────
+
+/** What was bought on a finished run (read on demand when someone opens it). */
+export async function loadRunItems(runId: string): Promise<RunItem[]> {
+  const { data, error } = await sb
+    .from('run_items')
+    .select('name, emoji, category, for_user, requested')
+    .eq('run_id', runId)
+    .order('bought_at')
+  if (error) throw error
+  return (data ?? []).map((r) => ({
+    name: r.name,
+    icon: r.emoji,
+    category: r.category as CategoryId,
+    forUser: r.for_user ?? undefined,
+    requested: r.requested,
+  }))
+}
 
 export function startRun(store: string) {
   act(rpcMe('start_run', { p_store: store }))
