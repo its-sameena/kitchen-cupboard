@@ -42,6 +42,17 @@ Effort: **tiny** (under an hour) · **small** (an evening) · **medium** (a few 
 | J | **Laptop and web layout** | On wide screens (about 900 px and up) the app switches to a desktop layout; phones stay exactly as they are. Preferred layout: a **dashboard** with a left sidebar (logo, greeting, pages, activity), the cupboard in the middle with wide shelves, and the grocery list plus any live run always visible on the right. Alternatives: two panes (cupboard + switchable side panel) or just wider shelves. Extras: side panels instead of bottom sheets, keyboard shortcuts (N, /, G, Esc), hover details, drag and drop to the grocery list, drop a receipt photo to scan, arcade with keyboard controls. Build in steps: layout shell → side-by-side cupboard and groceries → extras. | Medium–large |
 | I | **Housemate-written greetings** | Everyone can add their own top-bar greetings in House (inside jokes), shown to the whole kitchen alongside the built-in ones. | Small–medium (needs a database table) |
 
+## Saved branches (built, not merged)
+
+Finished work parked on its own branch with a Vercel preview. Pick it up later, improve it, then merge.
+
+| Branch | What | Status | Next |
+| --- | --- | --- | --- |
+| `feature/short-add-sheet` (v0.11.1) | Shorter add-item sheet that fits above the keyboard: one swipeable shelf row (follows the guess, edge fades, snapping), tap the big icon to change it, no "Item name" label, Return adds, no AutoFill Contact, sheets slide up smoothly with the keyboard with no hard bottom edge, page behind frozen and restored, "Report wrong guess" hidden for nonsense names. | Tested in the browser; first iPhone test felt clunky, fixes since then not yet tried on a phone. | Re-test on iPhone (Safari and home-screen app), record if still clunky, polish, merge. |
+| `feature/arcade` (v0.12.0) | Secret Kitchen Arcade (tap the logo 7 times): Shelf Breaker and Stack the Shelf, best scores on the phone only. | Play-tested in the browser. | Play-test on iPhone, tune difficulty, merge. |
+
+Both branches started from main before later changes; merge main into them (or rebase) before merging.
+
 ## Backups and data safety
 
 Discussed November 2026. Code and the live app are already safe: git and GitHub keep every version, and Vercel can roll back to any earlier deployment. The data in Supabase is the weak spot. The free plan, as far as we know, has no downloadable backups; check Project Settings → Database → Backups.
