@@ -125,7 +125,9 @@ The Toolbox shows the house's shared things piled on a ground line with physics,
 | `jumpUp`, `jumpSideways`, `jumpSpin` | The legend jump: upward speed range, sideways spread, spin | `jumpUp: [18, 25]` for higher jumps |
 | `dropEvery` | Time between things dropping in when the page opens (ms) | 60 quick cascade, 250 one by one |
 
-The box has a floor, two walls and a ceiling, so nothing can be thrown out of view.
+The box has a floor, two walls and a ceiling, so nothing can be thrown out of view. While the Toolbox is open the page itself never scrolls; swipes belong to the physics.
+
+The Toolbox's sheets (a thing's details and + Add) **drop down from the top**, clear of the iPhone keyboard; drag the handle up to dismiss. Any sheet can do this: `<Sheet from="top">` in `src/components/ui.tsx` (styles: `.sheet.from-top` in `src/styles.css`).
 
 **Layout and colours:** the "Toolbox (prototype)" section of `src/styles.css`:
 - `.toolbox-foot` is the strip under the ground line

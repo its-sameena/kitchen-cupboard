@@ -15,12 +15,16 @@ export function Sheet({
   onClose,
   title,
   children,
+  from = 'bottom',
 }: {
   open: boolean
   onClose: () => void
   title?: ReactNode
   children: ReactNode
+  /** 'top' drops the sheet down from under the status bar (clear of the keyboard); drag up to dismiss. */
+  from?: 'bottom' | 'top'
 }) {
+  const top = from === 'top'
   const [closing, setClosing] = useState(false)
   const [dragY, setDragY] = useState(0)
   const drag = useRef<{ startY: number } | null>(null)
@@ -53,46 +57,51 @@ export function Sheet({
   if (!open) return null
 
   const dragging = drag.current !== null
+  /** Drag the handle away from the edge it came from (down, or up for top sheets) to dismiss. */
+  const grab = (
+    <div
+      className="sheet-grab"
+      onPointerDown={(e) => {
+        drag.current = { startY: e.clientY }
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId)
+        } catch {
+          /* capture is a nicety; dragging still works without it */
+        }
+      }}
+      onPointerMove={(e) => {
+        if (!drag.current) return
+        const dy = e.clientY - drag.current.startY
+        setDragY(top ? Math.min(0, dy) : Math.max(0, dy))
+      }}
+      onPointerUp={() => {
+        if (!drag.current) return
+        drag.current = null
+        if (Math.abs(dragY) > 110) close()
+        else setDragY(0)
+      }}
+      onPointerCancel={() => {
+        drag.current = null
+        setDragY(0)
+      }}
+    >
+      <div className="sheet-handle" aria-hidden />
+    </div>
+  )
   return (
     <div
-      className={'sheet-backdrop' + (closing ? ' closing' : '')}
-      style={dragY > 0 && !closing ? { opacity: Math.max(0.3, 1 - dragY / 500) } : undefined}
+      className={'sheet-backdrop' + (top ? ' from-top' : '') + (closing ? ' closing' : '')}
+      style={dragY !== 0 && !closing ? { opacity: Math.max(0.3, 1 - Math.abs(dragY) / 500) } : undefined}
       onClick={close}
     >
       <div
-        className={'sheet' + (closing ? ' closing' : '') + (dragging ? ' dragging' : '')}
+        className={'sheet' + (top ? ' from-top' : '') + (closing ? ' closing' : '') + (dragging ? ' dragging' : '')}
         role="dialog"
         aria-modal="true"
-        style={dragY > 0 ? { transform: `translateY(${dragY}px)` } : undefined}
+        style={dragY !== 0 ? { transform: `translateY(${dragY}px)` } : undefined}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Drag the handle down to dismiss */}
-        <div
-          className="sheet-grab"
-          onPointerDown={(e) => {
-            drag.current = { startY: e.clientY }
-            try {
-              e.currentTarget.setPointerCapture(e.pointerId)
-            } catch {
-              /* capture is a nicety; dragging still works without it */
-            }
-          }}
-          onPointerMove={(e) => {
-            if (drag.current) setDragY(Math.max(0, e.clientY - drag.current.startY))
-          }}
-          onPointerUp={() => {
-            if (!drag.current) return
-            drag.current = null
-            if (dragY > 110) close()
-            else setDragY(0)
-          }}
-          onPointerCancel={() => {
-            drag.current = null
-            setDragY(0)
-          }}
-        >
-          <div className="sheet-handle" aria-hidden />
-        </div>
+        {!top && grab}
         {title && (
           <div className="sheet-head">
             <h2>{title}</h2>
@@ -102,6 +111,7 @@ export function Sheet({
           </div>
         )}
         <div className="sheet-body">{children}</div>
+        {top && grab}
       </div>
     </div>
   )

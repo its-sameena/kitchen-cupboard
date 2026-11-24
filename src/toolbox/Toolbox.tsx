@@ -51,6 +51,20 @@ export default function Toolbox() {
     return () => stage.current?.destroy()
   }, [])
 
+  // The page never scrolls while the Toolbox is open, wherever you swipe (except inside sheets).
+  useEffect(() => {
+    document.documentElement.classList.add('no-page-scroll')
+    window.scrollTo(0, 0)
+    const block = (e: TouchEvent) => {
+      if (!(e.target as HTMLElement).closest('.sheet')) e.preventDefault()
+    }
+    document.addEventListener('touchmove', block, { passive: false })
+    return () => {
+      document.documentElement.classList.remove('no-page-scroll')
+      document.removeEventListener('touchmove', block)
+    }
+  }, [])
+
   const things = useMemo(() => data.things.map((t) => ({ id: t.id, icon: t.icon, color: colorOf(t.holder) })), [data, s.users])
   useEffect(() => stage.current?.sync(things), [things])
 
@@ -84,7 +98,7 @@ export default function Toolbox() {
         </button>
       </div>
 
-      <Sheet open={!!open} onClose={() => setOpenId(null)} title={open?.name}>
+      <Sheet open={!!open} onClose={() => setOpenId(null)} title={open?.name} from="top">
         {open && (
           <ThingSheet
             key={open.id}
@@ -102,7 +116,7 @@ export default function Toolbox() {
         )}
       </Sheet>
 
-      <Sheet open={adding} onClose={() => setAdding(false)} title="Add to the Toolbox">
+      <Sheet open={adding} onClose={() => setAdding(false)} title="Add to the Toolbox" from="top">
         {adding && (
           <AddThing
             me={me}
