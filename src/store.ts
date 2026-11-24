@@ -109,15 +109,19 @@ async function fetchKitchen(): Promise<KitchenState | null> {
   const kitchen = await sb.from('kitchens').select('*').maybeSingle()
   if (kitchen.error) throw kitchen.error
   if (!kitchen.data) return null
-  const [members, items, grocery, runs, events, feedback] = await Promise.all([
+  const [members, items, grocery, runs, events, feedback, hidden] = await Promise.all([
     sb.from('members').select('*').order('joined_at'),
     sb.from('items').select('*'),
     sb.from('grocery').select('*').order('added_at'),
-    sb.from('runs').select('*').order('started_at', { ascending: false }).limit(10),
+    // A few extra, since cleared runs are left out of each profile's list.
+    sb.from('runs').select('*').order('started_at', { ascending: false }).limit(25),
     sb.from('events').select('*').order('at', { ascending: false }).limit(150),
     sb.from('feedback').select('*').order('created_at', { ascending: false }).limit(100),
+    sb.from('run_hidden').select('run_id, member_id'),
   ])
   for (const r of [members, items, grocery, runs, events, feedback]) if (r.error) throw r.error
+  // Optional: before the run_items migration is applied this table doesn't exist yet.
+  const hiddenRuns = hidden.error ? [] : hidden.data.map((h) => ({ runId: h.run_id as string, memberId: h.member_id as string }))
   const k = kitchen.data
   return {
     kitchenId: k.id,
@@ -160,6 +164,7 @@ async function fetchKitchen(): Promise<KitchenState | null> {
       endedAt: r.ended_at ? ms(r.ended_at) : undefined,
       itemCount: typeof r.item_count === 'number' ? r.item_count : null,
     })),
+    hiddenRuns,
     events: events.data!.reverse().map((e) => ({
       id: e.id,
       type: e.type,
@@ -467,6 +472,11 @@ export function markBought(entryId: string) {
 }
 
 // ───────────────────────── grocery runs ─────────────────────────
+
+/** Clear a run from this profile's Recent runs (housemates still see it; nothing is deleted). */
+export function hideRun(runId: string) {
+  act(rpcMe('hide_run', { p_run: runId }))
+}
 
 /** What was bought on a finished run (read on demand when someone opens it). */
 export async function loadRunItems(runId: string): Promise<RunItem[]> {

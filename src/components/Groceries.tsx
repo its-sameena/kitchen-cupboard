@@ -5,6 +5,7 @@ import {
   activeRun,
   addGrocery,
   endRun,
+  hideRun,
   loadRunItems,
   markBought,
   removeGrocery,
@@ -309,11 +310,23 @@ function StoreButton({
 function RecentRuns() {
   const s = useKitchen()
   const [open, setOpen] = useState(false)
+  const me = useMe()
   /** The run whose items are shown, or null for the list of runs. */
   const [viewing, setViewing] = useState<string | null>(null)
-  const past = s.runs.filter((r) => r.endedAt).reverse()
-  if (!past.length) return null
+  /** The row swiped open (showing its red Clear bubble). */
+  const [swiped, setSwiped] = useState<string | null>(null)
+  /** Asking "Clear this run?" for this run. */
+  const [confirming, setConfirming] = useState<string | null>(null)
+  /** Cleared on this phone just now (hidden straight away, before the reload). */
+  const [cleared, setCleared] = useState<string[]>([])
+  const hidden = new Set([...s.hiddenRuns.filter((h) => h.memberId === me?.id).map((h) => h.runId), ...cleared])
+  const past = s.runs
+    .filter((r) => r.endedAt && !hidden.has(r.id))
+    .reverse()
+    .slice(0, 10)
   const run = past.find((r) => r.id === viewing)
+  const confirmRun = past.find((r) => r.id === confirming)
+  if (!past.length && !open) return null
   return (
     <>
       <button className="recent-link" onClick={() => setOpen(true)}>
@@ -327,6 +340,8 @@ function RecentRuns() {
         }}
         title={run ? 'Run details' : 'Recent runs'}
       >
+        {!run && past.length > 0 && <p className="muted small run-hint">Swipe a run left to clear it from your list.</p>}
+        {!run && past.length === 0 && <p className="muted small">No recent runs.</p>}
         {run ? (
           <RunDetails run={run} onBack={() => setViewing(null)} />
         ) : (
@@ -343,20 +358,154 @@ function RecentRuns() {
               )
               return (
                 <li key={r.id}>
-                  {hasDetails ? (
-                    <button className="run-row" onClick={() => setViewing(r.id)} aria-label={`See what was bought on this run`}>
-                      {row}
-                    </button>
-                  ) : (
-                    <div className="run-row">{row}</div>
-                  )}
+                  <SwipeToClear
+                    open={swiped === r.id}
+                    onOpen={(o) => setSwiped(o ? r.id : null)}
+                    onClear={() => setConfirming(r.id)}
+                  >
+                    {hasDetails ? (
+                      <button className="run-row" onClick={() => setViewing(r.id)} aria-label="See what was bought on this run">
+                        {row}
+                      </button>
+                    ) : (
+                      <div className="run-row">{row}</div>
+                    )}
+                  </SwipeToClear>
                 </li>
               )
             })}
           </ul>
         )}
       </Sheet>
+      <Sheet
+        open={!!confirmRun}
+        onClose={() => {
+          setConfirming(null)
+          setSwiped(null)
+        }}
+        title="Clear this run?"
+      >
+        {confirmRun && (
+          <div className="confirm-clear">
+            <div className="run-row">
+              <RunSummary run={confirmRun} />
+            </div>
+            <p className="muted small">It’s removed from your recent runs only. Your housemates will still see it, and nothing in the cupboard changes.</p>
+            <button
+              className="btn btn-danger btn-block"
+              onClick={() => {
+                hideRun(confirmRun.id)
+                setCleared((c) => [...c, confirmRun.id])
+                setConfirming(null)
+                setSwiped(null)
+              }}
+            >
+              <UI.delete size={ICON_SIZES.button} /> Clear run
+            </button>
+            <button
+              className="btn btn-ghost btn-block"
+              onClick={() => {
+                setConfirming(null)
+                setSwiped(null)
+              }}
+            >
+              Keep it
+            </button>
+          </div>
+        )}
+      </Sheet>
     </>
+  )
+}
+
+/** Width of the red Clear bubble when a row is swiped open. */
+const CLEAR_W = 88
+
+/**
+ * Swipe a row left: it slides with your finger while a red "Clear" bubble grows in
+ * from the right. Let go past halfway and it stays open (tap the bubble); swipe most
+ * of the way across to go straight to the confirmation. Vertical drags still scroll.
+ */
+export function SwipeToClear({ open, onOpen, onClear, children }: { open: boolean; onOpen: (open: boolean) => void; onClear: () => void; children: React.ReactNode }) {
+  const [drag, setDrag] = useState<number | null>(null)
+  const start = useRef<{ x: number; y: number; base: number; dir?: 'h' | 'v'; width: number } | null>(null)
+  const moved = useRef(false)
+  /** Latest drag position (state can lag a frame behind on release). */
+  const latest = useRef(0)
+  const offset = drag ?? (open ? -CLEAR_W : 0)
+  const bubble = Math.max(0, -offset - 8)
+  return (
+    <div
+      className="swipe"
+      onPointerDown={(e) => {
+        start.current = { x: e.clientX, y: e.clientY, base: open ? -CLEAR_W : 0, width: e.currentTarget.clientWidth }
+        moved.current = false
+      }}
+      onPointerMove={(e) => {
+        const st = start.current
+        if (!st) return
+        const dx = e.clientX - st.x
+        const dy = e.clientY - st.y
+        if (!st.dir) {
+          if (Math.abs(dx) > 8 && Math.abs(dx) > Math.abs(dy)) {
+            st.dir = 'h'
+            e.currentTarget.setPointerCapture(e.pointerId)
+          } else if (Math.abs(dy) > 8) st.dir = 'v'
+        }
+        if (st.dir !== 'h') return
+        moved.current = true
+        latest.current = Math.min(0, Math.max(-st.width, st.base + dx))
+        setDrag(latest.current)
+      }}
+      onPointerUp={() => {
+        const st = start.current
+        start.current = null
+        if (!st || st.dir !== 'h') return
+        const end = latest.current
+        setDrag(null)
+        if (end < -st.width * 0.6) {
+          onOpen(true)
+          onClear()
+        } else onOpen(end < -CLEAR_W / 2)
+      }}
+      onPointerCancel={() => {
+        start.current = null
+        setDrag(null)
+      }}
+      // A swipe isn't a tap: don't open the run's details after dragging.
+      onClickCapture={(e) => {
+        if ((e.target as HTMLElement).closest('.swipe-clear')) return
+        if (moved.current) {
+          e.preventDefault()
+          e.stopPropagation()
+          moved.current = false
+        } else if (open) {
+          e.stopPropagation()
+          onOpen(false)
+        }
+      }}
+    >
+      <button
+        type="button"
+        className="swipe-clear"
+        style={{ width: bubble, opacity: Math.min(1, bubble / 40) }}
+        tabIndex={open ? 0 : -1}
+        aria-hidden={!open}
+        onClick={(e) => {
+          e.stopPropagation()
+          onClear()
+        }}
+      >
+        {bubble > 56 && (
+          <>
+            <UI.delete size={16} /> Clear
+          </>
+        )}
+      </button>
+      <div className={'swipe-content' + (drag === null ? ' settle' : '')} style={{ transform: `translateX(${offset}px)` }}>
+        {children}
+      </div>
+    </div>
   )
 }
 

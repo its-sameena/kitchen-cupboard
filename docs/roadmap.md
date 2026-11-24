@@ -73,7 +73,7 @@ Recommended: S1, S2 and S3 now; then S4 + S5; S9 once.
 
 ## Done
 
-- v0.13.0 (branch `feature/run-details`): recent runs show how many items were bought, and tapping a run lists everything bought and who it went to (feedback 849362db). New `run_items` table; runs before 21 Nov 2026 have no details.
+- v0.13.0 (branch `feature/run-details`): recent runs show how many items were bought, and tapping a run lists everything bought and who it went to (feedback 849362db). New `run_items` table; runs before 21 Nov 2026 have no details. Swipe a run left to clear it from your own list (per profile, nothing deleted; new `run_hidden` table).
 - v0.11.0: rotating top-bar greetings (36 approved, in `src/greetings.ts`).
 - v0.10.2: logo-first loading screen (the iOS launch-image version was tried and removed).
 - v0.10.1: shop logos on the grocery-run buttons (ASDA, Lidl, Sainsbury's).

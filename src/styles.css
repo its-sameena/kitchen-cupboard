@@ -375,6 +375,20 @@ textarea { resize: vertical; padding: 12px 14px; }
 button.run-row:active { background: var(--surface-2); border-radius: var(--radius-sm); }
 .run-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .run-chevron { color: var(--muted); flex: none; margin-left: -4px; }
+/* Swipe a run left to clear it: the row slides, a red bubble grows in from the right */
+.run-hint { margin: -4px 0 6px; }
+.swipe { position: relative; overflow: hidden; touch-action: pan-y; }
+.swipe-content { position: relative; background: var(--surface); }
+.swipe-content.settle { transition: transform calc(320ms * var(--motion)) var(--ease-bounce); }
+.swipe-clear {
+  position: absolute; right: 0; top: 8px; bottom: 8px; border-radius: 999px; overflow: hidden; white-space: nowrap;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  background: var(--danger); color: #fff; font-weight: 700; font-size: 14px;
+  transition: width calc(320ms * var(--motion)) var(--ease-bounce), opacity calc(200ms * var(--motion)) ease;
+}
+.swipe:has(.swipe-content:not(.settle)) .swipe-clear { transition: none; }
+.confirm-clear { display: flex; flex-direction: column; gap: 10px; }
+.confirm-clear .run-row { padding: 4px 2px 6px; }
 /* Run details */
 .run-back { font-size: 14px; margin-bottom: 4px; text-decoration: none; color: var(--muted); }
 .run-head { display: flex; align-items: center; gap: 12px; padding: 8px 2px 14px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }

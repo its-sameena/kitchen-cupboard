@@ -104,6 +104,8 @@ export interface KitchenState {
   items: Item[]
   grocery: GroceryEntry[]
   runs: GroceryRun[]
+  /** Runs each profile has cleared from its own Recent runs list. */
+  hiddenRuns: { runId: string; memberId: string }[]
   events: KitchenEvent[]
   feedback: Feedback[]
 }

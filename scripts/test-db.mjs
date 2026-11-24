@@ -139,6 +139,20 @@ await fails(P1, `delete from run_items where run_id = $1`, [lastRun.id], /permis
 await as(P1, `select start_run($1, '')`, [A])
 await as(P1, `select end_run($1)`, [A])
 assert.equal((await one(P1, `select item_count from runs order by started_at desc limit 1`)).item_count, 0)
+// Clearing a run from Recent runs (swipe left): hidden for that profile only, nothing deleted
+const runsBefore = (await as(P1, `select id from runs`)).length
+await fails(OUT, `select hide_run($1, $2)`, [A, lastRun.id], /Profile not found|not in a kitchen/)
+await as(P2, `select hide_run($1, $2)`, [J, lastRun.id])
+await as(P1, `select hide_run($1, $2)`, [J, lastRun.id]) // twice is fine (another phone, same profile)
+assert.deepEqual((await as(P1, `select member_id from run_hidden where run_id = $1`, [lastRun.id])).map((r) => r.member_id), [J])
+assert.equal((await as(P1, `select id from runs`)).length, runsBefore, 'run still there for everyone')
+assert.equal((await as(P1, `select * from run_items where run_id = $1`, [lastRun.id])).length, 2, 'item list kept')
+assert.equal((await as(OUT, `select * from run_hidden`)).length, 0, 'other kitchens see nothing')
+await fails(P1, `insert into run_hidden (run_id, member_id, kitchen_id) values ($1, $2, $3)`, [lastRun.id, A, k], /permission denied/)
+await as(P1, `select start_run($1, '')`, [A])
+const live = await one(P1, `select id from runs where ended_at is null`)
+await fails(P1, `select hide_run($1, $2)`, [A, live.id], /Run not found/)
+await as(P1, `select end_run($1)`, [A])
 
 // Bought outside a run
 await as(P1, `select mark_bought($1, (select id from grocery limit 1))`, [A])
