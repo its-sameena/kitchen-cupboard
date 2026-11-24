@@ -8,11 +8,43 @@ import { ITEM_ICON_DATA } from '../catalog/item-icons.ts'
 
 const { Engine, Bodies, Body, Composite, Query, Vertices, Constraint } = Matter
 
-/** Icon size on the stage (px) and its line thickness (in 24-unit icon space). */
-export const THING_SIZE = 58
-const LINE = 3.2
-/** Thickness of the black ground line (px). */
-const GROUND = 4
+/**
+ * Look and feel of the Toolbox: change these numbers to tune it
+ * (docs/customising.md → Toolbox). Save with `npm run dev` running to see changes.
+ */
+export const TOOLBOX = {
+  /** Size of each thing on the stage (px). Its physics shape scales with it. */
+  size: 58,
+  /** Icon line thickness (in the icon's 24-unit grid; the cupboard uses ~1.7). */
+  line: 2.2,
+  /** Thickness of the black ground line (px). */
+  ground: 2.5,
+  /** Gravity: 1 = normal, higher = things fall faster and feel heavier. */
+  gravity: 1.1,
+  /** Bounciness on landing: 0 = thud, 1 = superball. */
+  bounce: 0.25,
+  /** Sliding friction: 0 = ice, 1 = rubber. */
+  friction: 0.6,
+  /** How hard it is to start a resting thing sliding (0–1). */
+  grip: 0.8,
+  /** Air resistance: higher = slower, floatier flings. */
+  airDrag: 0.012,
+  /** Mass per area: mostly affects how things push each other. */
+  weight: 0.0015,
+  /** Dragging: how tightly a thing follows your finger (0–1) and how much it wobbles. */
+  dragStiffness: 0.12,
+  dragDamping: 0.08,
+  /** Legend jump: upward speed (min–max), sideways spread and spin. */
+  jumpUp: [13, 19] as [number, number],
+  jumpSideways: 9,
+  jumpSpin: 0.5,
+  /** Falling in: time between things dropping from the top (ms). */
+  dropEvery: 110,
+}
+
+export const THING_SIZE = TOOLBOX.size
+const LINE = TOOLBOX.line
+const GROUND = TOOLBOX.ground
 
 export interface StageThing {
   id: string
@@ -101,21 +133,21 @@ function outline(key: string): Matter.Vector[] {
 
 export function createStage(canvas: HTMLCanvasElement, onTap: (id: string) => void): Stage {
   const ctx = canvas.getContext('2d')!
-  const engine = Engine.create({ gravity: { x: 0, y: 1.1 }, positionIterations: 10, velocityIterations: 8 })
+  const engine = Engine.create({ gravity: { x: 0, y: TOOLBOX.gravity }, positionIterations: 10, velocityIterations: 8 })
   let W = 0
   let H = 0
   let walls: Matter.Body[] = []
   const bodies = new Map<string, { body: Matter.Body; icon: string; color: string; offset: Matter.Vector }>()
-  let dropQueue = 0
 
-  /** Ground and side walls (rebuilt when the stage changes size). Walls go far up so tall stacks stay in. */
+  /** Ground, ceiling and side walls (rebuilt when the stage changes size): nothing leaves the box. */
   function buildWalls() {
     Composite.remove(engine.world, walls)
     const t = 200
     walls = [
       Bodies.rectangle(W / 2, H - GROUND + t / 2, W * 3, t, { isStatic: true, friction: 0.9 }),
-      Bodies.rectangle(-t / 2, H - 3000, t, 6000, { isStatic: true }),
-      Bodies.rectangle(W + t / 2, H - 3000, t, 6000, { isStatic: true }),
+      Bodies.rectangle(W / 2, -t / 2, W * 3, t, { isStatic: true }),
+      Bodies.rectangle(-t / 2, H / 2, t, H + t * 2, { isStatic: true }),
+      Bodies.rectangle(W + t / 2, H / 2, t, H + t * 2, { isStatic: true }),
     ]
     Composite.add(engine.world, walls)
   }
@@ -138,17 +170,21 @@ export function createStage(canvas: HTMLCanvasElement, onTap: (id: string) => vo
   ro.observe(canvas)
   resize()
 
+  /** Things waiting to drop in from the top, one every TOOLBOX.dropEvery ms. */
+  const pending: StageThing[] = []
+  let nextDrop = 0
+
   function add(t: StageThing) {
     const hull = outline(t.icon)
     const centre = Vertices.centre(hull)
     const x = THING_SIZE / 2 + Math.random() * Math.max(1, W - THING_SIZE)
-    const y = -THING_SIZE - dropQueue++ * 70 // staggered, from above the top edge
+    const y = THING_SIZE / 2 + 2 // just inside the ceiling
     const body = Bodies.fromVertices(x, y, [hull], {
-      restitution: 0.25,
-      friction: 0.6,
-      frictionStatic: 0.8,
-      frictionAir: 0.012,
-      density: 0.0015,
+      restitution: TOOLBOX.bounce,
+      friction: TOOLBOX.friction,
+      frictionStatic: TOOLBOX.grip,
+      frictionAir: TOOLBOX.airDrag,
+      density: TOOLBOX.weight,
     })
     Body.setAngle(body, (Math.random() - 0.5) * 1.2)
     Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.15)
@@ -179,8 +215,8 @@ export function createStage(canvas: HTMLCanvasElement, onTap: (id: string) => vo
       pointA: p,
       bodyB: hit,
       pointB: { x: p.x - hit.position.x, y: p.y - hit.position.y },
-      stiffness: 0.12,
-      damping: 0.08,
+      stiffness: TOOLBOX.dragStiffness,
+      damping: TOOLBOX.dragDamping,
       length: 0,
     })
     Composite.add(engine.world, constraint)
@@ -217,7 +253,10 @@ export function createStage(canvas: HTMLCanvasElement, onTap: (id: string) => vo
       Engine.update(engine, STEP)
       acc -= STEP
     }
-    dropQueue = Math.max(0, dropQueue - 0.05) // later additions start lower again
+    if (pending.length && now >= nextDrop) {
+      add(pending.shift()!)
+      nextDrop = now + TOOLBOX.dropEvery
+    }
     ctx.clearRect(0, 0, W, H)
     // Ground line
     ctx.fillStyle = '#141414'
@@ -244,9 +283,12 @@ export function createStage(canvas: HTMLCanvasElement, onTap: (id: string) => vo
           bodies.delete(id)
         }
       }
+      for (let i = pending.length - 1; i >= 0; i--) if (!ids.has(pending[i].id)) pending.splice(i, 1)
       for (const t of things) {
         const v = bodies.get(t.id)
-        if (!v) add(t)
+        const waiting = pending.find((p) => p.id === t.id)
+        if (waiting) waiting.color = t.color
+        else if (!v) pending.push({ ...t })
         else if (v.icon !== t.icon) {
           Composite.remove(engine.world, v.body)
           bodies.delete(t.id)
@@ -258,8 +300,9 @@ export function createStage(canvas: HTMLCanvasElement, onTap: (id: string) => vo
       for (const id of ids) {
         const v = bodies.get(id)
         if (!v) continue
-        Body.setVelocity(v.body, { x: (Math.random() - 0.5) * 9, y: -13 - Math.random() * 6 })
-        Body.setAngularVelocity(v.body, (Math.random() - 0.5) * 0.5)
+        const [lo, hi] = TOOLBOX.jumpUp
+        Body.setVelocity(v.body, { x: (Math.random() - 0.5) * TOOLBOX.jumpSideways, y: -(lo + Math.random() * (hi - lo)) })
+        Body.setAngularVelocity(v.body, (Math.random() - 0.5) * TOOLBOX.jumpSpin)
       }
     },
     positions() {

@@ -104,6 +104,37 @@ To change the logo size or background, change it in both places: `30vw` and `#f3
 
 Before either of these, iOS briefly shows a plain screen in the app's background colour (`background_color` in `vite.config.ts`). A custom iOS launch image was tried in v0.10.2 and removed, because it didn't line up with the page's logo.
 
+## Toolbox (prototype)
+
+The Toolbox shows the house's shared things piled on a ground line with physics, each drawn in its holder's colour (grey = Elsewhere). While it's a prototype, open it by adding **`#toolbox`** to the app's address (e.g. `http://<your Mac>:5173/#toolbox` with `npm run dev`). Its data is kept on each phone only.
+
+**Look and feel:** every number is in the `TOOLBOX` block at the top of `src/toolbox/stage.ts`:
+
+| Setting | What it does | Try |
+| --- | --- | --- |
+| `size` | Size of each thing (px). Its physics shape scales with it. | 48 smaller, 70 chunkier |
+| `line` | Icon line thickness (the cupboard's icons use about 1.7) | 1.8–3.2 |
+| `ground` | Thickness of the black ground line (px) | 1–5 |
+| `gravity` | How fast things fall and how heavy they feel (1 = normal) | 0.7 floaty, 1.6 heavy |
+| `bounce` | Bounciness on landing (0 = thud, 1 = superball) | 0.1–0.5 |
+| `friction` | How easily things slide off each other (0 = ice, 1 = rubber) | 0.3 slippery, 0.9 grippy |
+| `grip` | How hard it is to start a resting thing sliding (0–1) | |
+| `airDrag` | Air resistance: higher = slower, floatier flings | 0.005–0.04 |
+| `weight` | How strongly things push each other around | |
+| `dragStiffness`, `dragDamping` | How tightly a dragged thing follows your finger, and how much it wobbles | stiffness 0.05 loose to 0.3 tight |
+| `jumpUp`, `jumpSideways`, `jumpSpin` | The legend jump: upward speed range, sideways spread, spin | `jumpUp: [18, 25]` for higher jumps |
+| `dropEvery` | Time between things dropping in when the page opens (ms) | 60 quick cascade, 250 one by one |
+
+The box has a floor, two walls and a ceiling, so nothing can be thrown out of view.
+
+**Layout and colours:** the "Toolbox (prototype)" section of `src/styles.css`:
+- `.toolbox-foot` is the strip under the ground line
+- `.toolbox-legend` and `.toolbox-person` are the housemates
+- `.toolbox-add` is the **+**
+- `.thing-*` are the info sheet
+
+The grey for Elsewhere is `ELSEWHERE` in `src/toolbox/Toolbox.tsx`. The sample things a phone starts with are `SAMPLES` in `src/toolbox/data.ts`.
+
 ## Doing it yourself vs asking Claude
 
 | Change | Fastest way |
