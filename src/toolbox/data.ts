@@ -32,6 +32,8 @@ export interface Handover {
 export interface ToolboxData {
   things: Thing[]
   history: Handover[]
+  /** Names from LATER_SAMPLES already offered to this phone. */
+  extras?: string[]
 }
 
 const key = (kitchenId: string) => `kc-toolbox-proto:${kitchenId}`
@@ -47,24 +49,50 @@ const SAMPLES: [string, string][] = [
   ['Wine glasses', 'wine'],
   ['Picnic bag', 'shopping-bag'],
   ['Blender', 'cup-soda'],
+  ['Steamer', 'steamer'],
+  ['Massage gun', 'massage-gun'],
+]
+
+/** Things added to the samples later: given once to phones that already have a saved Toolbox. */
+const LATER_SAMPLES: [string, string][] = [
+  ['Steamer', 'steamer'],
+  ['Massage gun', 'massage-gun'],
 ]
 
 function seed(users: User[]): ToolboxData {
   const now = Date.now()
+  const extras = LATER_SAMPLES.map(([name]) => name)
   const things = SAMPLES.map(([name, icon], i) => ({
     id: id(),
     name,
     icon,
-    holder: i === SAMPLES.length - 1 || !users.length ? null : users[i % users.length].id,
+    holder: name === 'Blender' || !users.length ? null : users[i % users.length].id,
     addedAt: now - i * 3600_000,
   }))
-  return { things, history: [] }
+  return { things, history: [], extras }
 }
 
 export function loadToolbox(kitchenId: string, users: User[]): ToolboxData {
   try {
     const d = JSON.parse(localStorage.getItem(key(kitchenId)) ?? 'null') as ToolboxData | null
-    if (d && Array.isArray(d.things)) return d
+    if (d && Array.isArray(d.things)) {
+      const missing = LATER_SAMPLES.filter(([name]) => !(d.extras ?? []).includes(name))
+      if (!missing.length) return d
+      const have = new Set(d.things.map((t) => t.name.toLowerCase()))
+      const now = Date.now()
+      const next: ToolboxData = {
+        ...d,
+        things: [
+          ...d.things,
+          ...missing
+            .filter(([name]) => !have.has(name.toLowerCase()))
+            .map(([name, icon], i) => ({ id: id(), name, icon, holder: users.length ? users[(d.things.length + i) % users.length].id : null, addedAt: now })),
+        ],
+        extras: [...(d.extras ?? []), ...missing.map(([name]) => name)],
+      }
+      saveToolbox(kitchenId, next)
+      return next
+    }
   } catch {
     /* fall through to samples */
   }
@@ -94,6 +122,7 @@ export function handOver(d: ToolboxData, thingId: string, to: string | null, by:
   const t = d.things.find((x) => x.id === thingId)
   if (!t || t.holder === to) return d
   return {
+    ...d,
     things: d.things.map((x) => (x.id === thingId ? { ...x, holder: to } : x)),
     history: [...d.history, { id: id(), thingId, from: t.holder, to, by, at: Date.now() }],
   }
@@ -110,6 +139,7 @@ export function undo(d: ToolboxData, thingId: string, me: string): ToolboxData {
   const h = undoable(d, thingId, me)
   if (!h) return d
   return {
+    ...d,
     things: d.things.map((x) => (x.id === thingId ? { ...x, holder: h.from } : x)),
     history: d.history.map((x) => (x.id === h.id ? { ...x, undone: true } : x)),
   }
@@ -120,6 +150,7 @@ export function addThing(d: ToolboxData, name: string, icon: string, holder: str
   return {
     thing,
     data: {
+      ...d,
       things: [...d.things, thing],
       history: [...d.history, { id: id(), thingId: thing.id, from: null, to: holder, by, at: Date.now(), added: true }],
     },
@@ -127,5 +158,5 @@ export function addThing(d: ToolboxData, name: string, icon: string, holder: str
 }
 
 export function removeThing(d: ToolboxData, thingId: string): ToolboxData {
-  return { things: d.things.filter((x) => x.id !== thingId), history: d.history.filter((h) => h.thingId !== thingId) }
+  return { ...d, things: d.things.filter((x) => x.id !== thingId), history: d.history.filter((h) => h.thingId !== thingId) }
 }

@@ -594,4 +594,27 @@ export const ITEM_ICON_DATA: Record<string, ItemIconData> = {
       ["path", { d: "M19.8 4.2C20 14 4 10 4.2 19.8" }],
     ],
   },
+  steamer: {
+    label: "Steamer",
+    source: "custom",
+    node: [
+      ["ellipse", { cx: "12", cy: "6", rx: "7.5", ry: "3.5" }],
+      ["path", { d: "M9 6h.01M12 6h.01M15 6h.01" }],
+      ["path", { d: "M10 9.4 9 17M14 9.4l1 7.6" }],
+      ["path", { d: "M12 12v1.5" }],
+      ["path", { d: "M8 17h8l.5 3.9a1 1 0 0 1-1 1.1h-7a1 1 0 0 1-1-1.1Z" }],
+    ],
+  },
+  "massage-gun": {
+    label: "Massage gun",
+    source: "custom",
+    node: [
+      ["rect", { x: "2.5", y: "4.5", width: "12", height: "6.5", rx: "3" }],
+      ["path", { d: "M5.5 4.7v6.1" }],
+      ["path", { d: "M14.5 5.25h2v5h-2M15.5 5.25v5" }],
+      ["path", { d: "M16.5 7.75h.5" }],
+      ["circle", { cx: "19.5", cy: "7.75", r: "2.5" }],
+      ["path", { d: "M6.5 11v8.75A1.75 1.75 0 0 0 8.25 21.5h1.5a1.75 1.75 0 0 0 1.75-1.75V11" }],
+    ],
+  },
 }
