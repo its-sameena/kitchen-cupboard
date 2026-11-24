@@ -11,7 +11,7 @@ import { useKitchen, useMe } from '../store'
 import type { User } from '../types'
 import { Avatar, Sheet, timeAgo } from '../components/ui'
 import { addThing, handOver, loadToolbox, removeThing, resetToolbox, saveToolbox, undo, undoable, type ToolboxData } from './data'
-import { createStage, type Stage } from './stage'
+import { createStage, TOOLBOX, type Stage } from './stage'
 
 /** Colour for things that aren't with anyone in the house. */
 export const ELSEWHERE = '#a6a5ad'
@@ -159,7 +159,8 @@ function ThingSheet(props: {
     <div className="thing-sheet">
       <div className="thing-head">
         <span className="thing-icon" style={{ color: colorOf(t.holder) }}>
-          <ItemIcon name={t.icon} size={44} strokeWidth={2.6} />
+          {/* Same line thickness as on the ground (TOOLBOX.line in stage.ts) */}
+          <ItemIcon name={t.icon} size={44} strokeWidth={TOOLBOX.line} />
         </span>
         <div>
           <span className="muted small">{t.holder === null ? 'Not with anyone in the house' : 'Has it now'}</span>
@@ -251,7 +252,7 @@ function AddThing({ me, users, onAdd }: { me: User; users: User[]; onAdd: (name:
     >
       <div className="add-thing-row">
         <span className="thing-icon sm">
-          <ItemIcon name={icon} size={30} strokeWidth={2.2} />
+          <ItemIcon name={icon} size={30} strokeWidth={TOOLBOX.line} />
         </span>
         <input
           className="add-thing-name"
