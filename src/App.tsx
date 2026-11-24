@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
 import Cupboard from './components/Cupboard'
 import Groceries from './components/Groceries'
 import House from './components/House'
@@ -14,6 +14,10 @@ import { motionMs } from './motion'
 import { subscribePush } from './notify'
 import { activeRun, clearError, dismissAvatarPrompt, setAvatar, eventsFor, markSeen, onNewEvents, useApp, useKitchen, useMe } from './store'
 import type { KitchenEvent } from './types'
+
+/** Toolbox prototype (open the app with #toolbox). Physics code loads only when opened. */
+const Toolbox = lazy(() => import('./toolbox/Toolbox'))
+const isToolbox = () => location.hash === '#toolbox'
 
 type Tab = TabId
 
@@ -52,7 +56,19 @@ export default function App() {
 function Main() {
   const s = useKitchen()
   const me = useMe()!
-  const [tab, setTab] = useState<Tab>(initialTab)
+  const [tab, setTabState] = useState<Tab>(initialTab)
+  // Prototype page: shown instead of the current tab while the address ends in #toolbox.
+  const [toolbox, setToolbox] = useState(isToolbox)
+  useEffect(() => {
+    const on = () => setToolbox(isToolbox())
+    window.addEventListener('hashchange', on)
+    return () => window.removeEventListener('hashchange', on)
+  }, [])
+  const setTab = (t: Tab) => {
+    if (isToolbox()) history.replaceState(null, '', location.pathname + location.search)
+    setToolbox(false)
+    setTabState(t)
+  }
   const [inboxOpen, setInboxOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const { avatarPrompt } = useApp()
@@ -133,10 +149,12 @@ function Main() {
       </header>
 
       {/* Keyed by tab so the title animates in again on every tab change */}
-      <div className="page-title" key={tab}>
-        <span className="kicker">{s.kitchenName}</span>
-        <h1>{TABS.find((t) => t.id === tab)?.title}</h1>
-      </div>
+      {!toolbox && (
+        <div className="page-title" key={tab}>
+          <span className="kicker">{s.kitchenName}</span>
+          <h1>{TABS.find((t) => t.id === tab)?.title}</h1>
+        </div>
+      )}
 
       {run && tab !== 'grocery' && (
         <button className="run-banner" onClick={() => setTab('grocery')}>
@@ -148,10 +166,18 @@ function Main() {
         </button>
       )}
 
-      <main className="content">
-        {tab === 'cupboard' && <Cupboard />}
-        {tab === 'grocery' && <Groceries />}
-        {tab === 'house' && <House />}
+      <main className={'content' + (toolbox ? ' content-toolbox' : '')}>
+        {toolbox ? (
+          <Suspense fallback={null}>
+            <Toolbox />
+          </Suspense>
+        ) : (
+          <>
+            {tab === 'cupboard' && <Cupboard />}
+            {tab === 'grocery' && <Groceries />}
+            {tab === 'house' && <House />}
+          </>
+        )}
       </main>
 
       <nav
