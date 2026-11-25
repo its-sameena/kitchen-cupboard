@@ -625,8 +625,9 @@ html.no-page-scroll, html.no-page-scroll body { overflow: hidden; overscroll-beh
 .thing-head > div { display: flex; flex-direction: column; gap: 4px; }
 .thing-holder { display: flex; align-items: center; gap: 8px; font-size: 18px; }
 .thing-other { align-self: center; font-size: 14px; color: var(--muted); }
-.thing-pick { display: flex; flex-wrap: wrap; gap: 8px; }
-.thing-pick-btn { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 999px; background: var(--surface-2); font-weight: 600; font-size: 14px; }
+.thing-pick { display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; padding: 2px 0; }
+.thing-pick::-webkit-scrollbar { display: none; }
+.thing-pick-btn { flex: none; white-space: nowrap; display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 999px; background: var(--surface-2); font-weight: 600; font-size: 14px; }
 .thing-pick-btn.on { background: var(--accent); color: var(--accent-ink); }
 .thing-history { list-style: none; margin: 6px 0 0; padding: 10px 0 0; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
 .thing-history li.undone { text-decoration: line-through; color: var(--muted); }

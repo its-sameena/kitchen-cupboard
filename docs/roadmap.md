@@ -6,6 +6,8 @@ Effort: **tiny** (under an hour) · **small** (an evening) · **medium** (a few 
 
 ## Recommended order
 
+**Next up (agreed 25 Nov 2026):** after the Toolbox is merged, finish the **shorter add-item sheet** (`feature/short-add-sheet`: horizontal shelf row, keyboard-friendly). Bring it up to date with main, re-test on iPhone, polish, merge.
+
 1. **Quick-wins bundle:** home-screen badge (4), running low (A), grocery list in shop order (E), changelog and tags (9), refresh old icons (10).
 2. **Recipes with "What can I cook?"** (1 + C): the big idea from feedback.
 3. **Use-by dates** (B), then the weekly digest (H).
