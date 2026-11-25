@@ -50,7 +50,7 @@ export default function Toolbox() {
   }, [])
 
   useEffect(() => {
-    stage.current = createStage(canvas.current!, setOpenId)
+    stage.current = createStage(canvas.current!, { onTap: setOpenId })
     return () => stage.current?.destroy()
   }, [])
 

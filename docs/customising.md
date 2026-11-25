@@ -137,6 +137,18 @@ The Toolbox's sheets (a thing's details and + Add) **drop down from the top**, c
 
 The grey for Elsewhere is `ELSEWHERE` in `src/toolbox/Toolbox.tsx`.
 
+## Secret playground
+
+Tap the **top-left app icon 5 times** (within 2.5 seconds) to open a full-screen physics playground. Every item **in stock** in the cupboard drops in, drawn in its owner's colour; an item two people own appears twice, once per colour. Drag and fling things; the bottom edge of the screen is the ground and there's no ceiling, so a full cupboard piles up and out of view. The round **←** button (top left) or Escape leaves. It only reads the cupboard and never changes anything.
+
+| To change | Where |
+| --- | --- |
+| Size, line thickness, gravity, bounce, how fast things drop in… | `PLAYGROUND` at the top of `src/playground/Playground.tsx`. It starts from the Toolbox's values (`TOOLBOX` in `src/toolbox/stage.ts`, explained in the Toolbox section above) and overrides `size`, `line` and `dropEvery`. Add any other key there to override it too. |
+| How it's found (tap count, time window) | `SecretLogo` at the end of `src/App.tsx` |
+| The ← button and background | "Secret playground" section of `src/styles.css` |
+
+Both pages share the physics engine in `src/toolbox/stage.ts`. `createStage(canvas, { tuning, ceiling, groundLine, onTap })` turns the ceiling and ground line on or off.
+
 ## Doing it yourself vs asking Claude
 
 | Change | Fastest way |

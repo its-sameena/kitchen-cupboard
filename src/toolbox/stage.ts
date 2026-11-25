@@ -42,9 +42,18 @@ export const TOOLBOX = {
   dropEvery: 110,
 }
 
-export const THING_SIZE = TOOLBOX.size
-const LINE = TOOLBOX.line
-const GROUND = TOOLBOX.ground
+/** A set of look-and-feel numbers (the Toolbox uses TOOLBOX; the secret playground has its own). */
+export type Tuning = typeof TOOLBOX
+
+export interface StageOptions {
+  /** Tap on a thing (omit for look-and-play only). */
+  onTap?: (id: string) => void
+  tuning?: Tuning
+  /** Top wall: false lets piles grow up and out of view (flung things fall back). Default true. */
+  ceiling?: boolean
+  /** Draw the black ground line (false = the bottom edge is the ground). Default true. */
+  groundLine?: boolean
+}
 
 export interface StageThing {
   id: string
@@ -91,13 +100,13 @@ function iconPath(key: string): Path2D {
   return p
 }
 
-/** Draws an icon centred on (0,0), THING_SIZE wide, as thick coloured lines. */
-function drawIcon(ctx: CanvasRenderingContext2D, key: string, color: string) {
+/** Draws an icon centred on (0,0), `size` wide, as thick coloured lines. */
+function drawIcon(ctx: CanvasRenderingContext2D, key: string, color: string, size: number, line: number) {
   ctx.save()
-  ctx.translate(-THING_SIZE / 2, -THING_SIZE / 2)
-  ctx.scale(THING_SIZE / 24, THING_SIZE / 24)
+  ctx.translate(-size / 2, -size / 2)
+  ctx.scale(size / 24, size / 24)
   ctx.strokeStyle = color
-  ctx.lineWidth = LINE
+  ctx.lineWidth = line
   ctx.lineCap = 'round'
   ctx.lineJoin = 'round'
   ctx.stroke(iconPath(key))
@@ -106,16 +115,17 @@ function drawIcon(ctx: CanvasRenderingContext2D, key: string, color: string) {
 
 /** The icon's outer outline (convex hull of its drawn pixels), centred on the icon's middle. */
 const hulls = new Map<string, Matter.Vector[]>()
-function outline(key: string): Matter.Vector[] {
-  const cached = hulls.get(key)
+function outline(key: string, size: number, line: number): Matter.Vector[] {
+  const cacheKey = `${key}|${size}|${line}`
+  const cached = hulls.get(cacheKey)
   if (cached) return cached
   const pad = 6
-  const s = THING_SIZE + pad * 2
+  const s = size + pad * 2
   const c = document.createElement('canvas')
   c.width = c.height = s
   const ctx = c.getContext('2d', { willReadFrequently: true })!
   ctx.translate(s / 2, s / 2)
-  drawIcon(ctx, key, '#000')
+  drawIcon(ctx, key, '#000', size, line)
   const { data } = ctx.getImageData(0, 0, s, s)
   const pts: Matter.Vector[] = []
   for (let y = 0; y < s; y += 2) {
@@ -123,29 +133,37 @@ function outline(key: string): Matter.Vector[] {
   }
   const square = [{ x: -20, y: -20 }, { x: 20, y: -20 }, { x: 20, y: 20 }, { x: -20, y: 20 }]
   const h: Matter.Vector[] = pts.length >= 3 ? Vertices.hull(pts as unknown as Matter.Vertex[]) : square
-  hulls.set(key, h)
+  hulls.set(cacheKey, h)
   return h
 }
 
 // ───────────────────────── the stage ─────────────────────────
 
-export function createStage(canvas: HTMLCanvasElement, onTap: (id: string) => void): Stage {
+export function createStage(canvas: HTMLCanvasElement, opts: StageOptions = {}): Stage {
+  const T = opts.tuning ?? TOOLBOX
+  const THING_SIZE = T.size
+  const LINE = T.line
+  const ceiling = opts.ceiling !== false
+  const GROUND = opts.groundLine === false ? 0 : T.ground
   const ctx = canvas.getContext('2d')!
-  const engine = Engine.create({ gravity: { x: 0, y: TOOLBOX.gravity }, positionIterations: 10, velocityIterations: 8 })
+  const engine = Engine.create({ gravity: { x: 0, y: T.gravity }, positionIterations: 10, velocityIterations: 8 })
   let W = 0
   let H = 0
   let walls: Matter.Body[] = []
   const bodies = new Map<string, { body: Matter.Body; icon: string; color: string; offset: Matter.Vector }>()
 
-  /** Ground, ceiling and side walls (rebuilt when the stage changes size): nothing leaves the box. */
+  /** Ground, side walls and (optionally) a ceiling, rebuilt when the stage changes size. */
   function buildWalls() {
     Composite.remove(engine.world, walls)
     const t = 200
+    // Without a ceiling the side walls reach far up, so tall piles and flings stay inside.
+    const wallH = ceiling ? H + t * 2 : H + 8000
+    const wallY = ceiling ? H / 2 : H - wallH / 2 + t
     walls = [
       Bodies.rectangle(W / 2, H - GROUND + t / 2, W * 3, t, { isStatic: true, friction: 0.9 }),
-      Bodies.rectangle(W / 2, -t / 2, W * 3, t, { isStatic: true }),
-      Bodies.rectangle(-t / 2, H / 2, t, H + t * 2, { isStatic: true }),
-      Bodies.rectangle(W + t / 2, H / 2, t, H + t * 2, { isStatic: true }),
+      Bodies.rectangle(-t / 2, wallY, t, wallH, { isStatic: true }),
+      Bodies.rectangle(W + t / 2, wallY, t, wallH, { isStatic: true }),
+      ...(ceiling ? [Bodies.rectangle(W / 2, -t / 2, W * 3, t, { isStatic: true })] : []),
     ]
     Composite.add(engine.world, walls)
   }
@@ -168,21 +186,22 @@ export function createStage(canvas: HTMLCanvasElement, onTap: (id: string) => vo
   ro.observe(canvas)
   resize()
 
-  /** Things waiting to drop in from the top, one every TOOLBOX.dropEvery ms. */
+  /** Things waiting to drop in from the top, one every T.dropEvery ms. */
   const pending: StageThing[] = []
   let nextDrop = 0
 
   function add(t: StageThing) {
-    const hull = outline(t.icon)
+    const hull = outline(t.icon, THING_SIZE, LINE)
     const centre = Vertices.centre(hull)
     const x = THING_SIZE / 2 + Math.random() * Math.max(1, W - THING_SIZE)
-    const y = THING_SIZE / 2 + 2 // just inside the ceiling
+    // Just inside the ceiling, or (no ceiling) just above the top edge so it falls into view.
+    const y = ceiling ? THING_SIZE / 2 + 2 : -THING_SIZE
     const body = Bodies.fromVertices(x, y, [hull], {
-      restitution: TOOLBOX.bounce,
-      friction: TOOLBOX.friction,
-      frictionStatic: TOOLBOX.grip,
-      frictionAir: TOOLBOX.airDrag,
-      density: TOOLBOX.weight,
+      restitution: T.bounce,
+      friction: T.friction,
+      frictionStatic: T.grip,
+      frictionAir: T.airDrag,
+      density: T.weight,
     })
     Body.setAngle(body, (Math.random() - 0.5) * 1.2)
     Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.15)
@@ -213,8 +232,8 @@ export function createStage(canvas: HTMLCanvasElement, onTap: (id: string) => vo
       pointA: p,
       bodyB: hit,
       pointB: { x: p.x - hit.position.x, y: p.y - hit.position.y },
-      stiffness: TOOLBOX.dragStiffness,
-      damping: TOOLBOX.dragDamping,
+      stiffness: T.dragStiffness,
+      damping: T.dragDamping,
       length: 0,
     })
     Composite.add(engine.world, constraint)
@@ -232,7 +251,7 @@ export function createStage(canvas: HTMLCanvasElement, onTap: (id: string) => vo
     const tap = !grab.moved && performance.now() - grab.t < 350
     const id = grab.id
     grab = null
-    if (tap) onTap(id)
+    if (tap) opts.onTap?.(id)
   }
   canvas.addEventListener('pointerdown', onDown)
   canvas.addEventListener('pointermove', onMove)
@@ -253,19 +272,21 @@ export function createStage(canvas: HTMLCanvasElement, onTap: (id: string) => vo
     }
     if (pending.length && now >= nextDrop) {
       add(pending.shift()!)
-      nextDrop = now + TOOLBOX.dropEvery
+      nextDrop = now + T.dropEvery
     }
     ctx.clearRect(0, 0, W, H)
     // Ground line
-    ctx.fillStyle = '#141414'
-    ctx.fillRect(0, H - GROUND, W, GROUND)
+    if (GROUND > 0) {
+      ctx.fillStyle = '#141414'
+      ctx.fillRect(0, H - GROUND, W, GROUND)
+    }
     for (const v of bodies.values()) {
       const { body } = v
       ctx.save()
       ctx.translate(body.position.x, body.position.y)
       ctx.rotate(body.angle)
       ctx.translate(v.offset.x, v.offset.y)
-      drawIcon(ctx, v.icon, v.color)
+      drawIcon(ctx, v.icon, v.color, THING_SIZE, LINE)
       ctx.restore()
     }
     raf = requestAnimationFrame(frame)
@@ -298,9 +319,9 @@ export function createStage(canvas: HTMLCanvasElement, onTap: (id: string) => vo
       for (const id of ids) {
         const v = bodies.get(id)
         if (!v) continue
-        const [lo, hi] = TOOLBOX.jumpUp
-        Body.setVelocity(v.body, { x: (Math.random() - 0.5) * TOOLBOX.jumpSideways, y: -(lo + Math.random() * (hi - lo)) })
-        Body.setAngularVelocity(v.body, (Math.random() - 0.5) * TOOLBOX.jumpSpin)
+        const [lo, hi] = T.jumpUp
+        Body.setVelocity(v.body, { x: (Math.random() - 0.5) * T.jumpSideways, y: -(lo + Math.random() * (hi - lo)) })
+        Body.setAngularVelocity(v.body, (Math.random() - 0.5) * T.jumpSpin)
       }
     },
     destroy() {

@@ -51,7 +51,8 @@ Finished work parked on its own branch with a Vercel preview. Pick it up later, 
 | Branch | What | Status | Next |
 | --- | --- | --- | --- |
 | `feature/short-add-sheet` (v0.11.1) | Shorter add-item sheet that fits above the keyboard: one swipeable shelf row (follows the guess, edge fades, snapping), tap the big icon to change it, no "Item name" label, Return adds, no AutoFill Contact, sheets slide up smoothly with the keyboard with no hard bottom edge, page behind frozen and restored, "Report wrong guess" hidden for nonsense names. | Tested in the browser; first iPhone test felt clunky, fixes since then not yet tried on a phone. | Re-test on iPhone (Safari and home-screen app), record if still clunky, polish, merge. |
-| `feature/arcade` (v0.12.0) | Secret Kitchen Arcade (tap the logo 7 times): Shelf Breaker and Stack the Shelf, best scores on the phone only. | Play-tested in the browser. | Play-test on iPhone, tune difficulty, merge. |
+| `feature/playground` (v0.16.0) | **Secret physics playground:** 5 taps on the top-left icon; every in-stock cupboard item piles up in its owner's colour, full screen, no ceiling, look-and-play only. | Built, tested in the browser. | Try on a phone, tune `PLAYGROUND`, merge. Later: make it one of the arcade's games. |
+| `feature/arcade` (v0.12.0) | Secret Kitchen Arcade (tap the logo 7 times): Shelf Breaker and Stack the Shelf, best scores on the phone only. | Play-tested in the browser. | Play-test on iPhone, tune difficulty, merge. **Its 7-tap trigger clashes with the playground's 5 taps**: when merging, open one secret place (the arcade) and add the playground as one of its games. |
 
 Both branches started from main before later changes; merge main into them (or rebase) before merging.
 

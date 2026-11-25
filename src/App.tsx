@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import Cupboard from './components/Cupboard'
 import Groceries from './components/Groceries'
 import House from './components/House'
@@ -17,6 +17,8 @@ import type { KitchenEvent } from './types'
 
 /** Toolbox tab: its physics code is downloaded the first time someone opens it. */
 const Toolbox = lazy(() => import('./toolbox/Toolbox'))
+/** Secret playground (tap the top-left icon 5 times), downloaded only when found. */
+const Playground = lazy(() => import('./playground/Playground'))
 
 type Tab = TabId
 
@@ -57,6 +59,7 @@ function Main() {
   const me = useMe()!
   const [tab, setTab] = useState<Tab>(initialTab)
   const toolbox = tab === 'toolbox'
+  const [playground, setPlayground] = useState(false)
   const [inboxOpen, setInboxOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const { avatarPrompt } = useApp()
@@ -113,9 +116,14 @@ function Main() {
 
   return (
     <div className="app">
+      {playground && (
+        <Suspense fallback={null}>
+          <Playground onClose={() => setPlayground(false)} />
+        </Suspense>
+      )}
       <header className="topbar">
         <div className="topbar-brand">
-          <img src="/favicon.svg" alt="" />
+          <SecretLogo onFound={() => setPlayground(true)} />
           <Greeting profileId={me.id} name={me.name} />
         </div>
         <button className="icon-btn" onClick={() => setFeedbackOpen(true)} aria-label="Send feedback">
@@ -319,4 +327,23 @@ function Greeting({ profileId, name }: { profileId: string; name: string }) {
     return () => document.removeEventListener('visibilitychange', on)
   }, [])
   return <span>{fillGreeting(currentGreeting(profileId), name)}</span>
+}
+
+/** The top-left logo. Tapping it 5 times in quick succession opens the secret playground. */
+function SecretLogo({ onFound }: { onFound: () => void }) {
+  const taps = useRef<number[]>([])
+  return (
+    <img
+      src="/favicon.svg"
+      alt=""
+      onClick={() => {
+        const now = Date.now()
+        taps.current = [...taps.current.filter((t) => now - t < 2500), now]
+        if (taps.current.length >= 5) {
+          taps.current = []
+          onFound()
+        }
+      }}
+    />
+  )
 }
