@@ -55,6 +55,19 @@ Finished work parked on its own branch with a Vercel preview. Pick it up later, 
 
 Both branches started from main before later changes; merge main into them (or rebase) before merging.
 
+## Collaborators
+
+Letting a friend (with their own Claude subscription) experiment without risking the live app. Discussed November 2026.
+
+| # | Idea | What it gives you | Effort |
+| --- | --- | --- | --- |
+| C1 | **Protect `main`** | GitHub → Settings → Branches → rule for `main`: require a pull request with 1 approval, block force pushes and deletions. Nothing reaches the live app without your OK. | Tiny |
+| C2 | **Fork + own Supabase (recommended)** | Friend forks the public repo, sets up a free Supabase project and optional Vercel from the README, experiments freely (even database changes), and opens pull requests back. Zero risk to your data. | Small (their setup) |
+| C3 | **Collaborator on your repo** | Invite with Write role (after C1). Branches get Vercel previews; previews share the live database, so they should use their own test kitchen. Database changes still need your Supabase login. Don't add them to Vercel or Supabase. | Tiny |
+| C4 | **`CONTRIBUTING.md`** | How to fork, set up Supabase/Vercel, use Claude Code with `CLAUDE.md` and `docs/`, and open a pull request. | Small |
+
+Never share: the service-role key, database password, Gemini key, VAPID keys.
+
 ## Backups and data safety
 
 Discussed November 2026. Code and the live app are already safe: git and GitHub keep every version, and Vercel can roll back to any earlier deployment. The data in Supabase is the weak spot. The free plan, as far as we know, has no downloadable backups; check Project Settings → Database → Backups.
