@@ -40,6 +40,18 @@ export const TOOLBOX = {
   jumpSpin: 0.5,
   /** Falling in: time between things dropping from the top (ms). */
   dropEvery: 110,
+  /**
+   * Physics accuracy: calculation steps per second. Higher = steadier stacks and fewer
+   * things passing through each other, but more work for the phone (60, 120, 240).
+   */
+  stepsPerSecond: 120,
+  /**
+   * Speed limit (px per 1/60 s). Stops very fast flings from skipping through things.
+   * Keep it below the item size; lower = calmer, higher = wilder.
+   */
+  maxSpeed: 36,
+  /** Spin limit (radians per 1/60 s). */
+  maxSpin: 0.45,
 }
 
 /** A set of look-and-feel numbers (the Toolbox uses TOOLBOX; the secret playground has its own). */
@@ -66,6 +78,8 @@ export interface Stage {
   sync(things: StageThing[]): void
   /** Make these things jump (into everything else). */
   jump(ids: string[]): void
+  /** Where each thing is and how fast it's going (for testing in the browser console). */
+  positions(): Record<string, { x: number; y: number; speed: number }>
   destroy(): void
 }
 
@@ -212,14 +226,24 @@ export function createStage(canvas: HTMLCanvasElement, opts: StageOptions = {}):
 
   // ── drag and fling ──
   let grab: { constraint: Matter.Constraint; id: string; x: number; y: number; t: number; moved: boolean } | null = null
-  const point = (e: PointerEvent) => {
+  /** Finger position on the stage. */
+  const raw = (e: PointerEvent) => {
     const r = canvas.getBoundingClientRect()
     return { x: e.clientX - r.left, y: e.clientY - r.top }
   }
+  /** Where a dragged thing is pulled to: kept inside the box so it can't be pulled through a wall. */
+  const point = (e: PointerEvent) => {
+    const p = raw(e)
+    const m = THING_SIZE / 2
+    return {
+      x: Math.min(Math.max(p.x, m), W - m),
+      y: Math.min(Math.max(p.y, ceiling ? m : -Infinity), H - GROUND - m),
+    }
+  }
   const idOf = (b: Matter.Body) => [...bodies].find(([, v]) => v.body === b)?.[0]
   const onDown = (e: PointerEvent) => {
+    const hit = Query.point([...bodies.values()].map((v) => v.body), raw(e)).pop()
     const p = point(e)
-    const hit = Query.point([...bodies.values()].map((v) => v.body), p).pop()
     if (!hit) return
     const id = idOf(hit)
     if (!id) return
@@ -258,18 +282,43 @@ export function createStage(canvas: HTMLCanvasElement, opts: StageOptions = {}):
   canvas.addEventListener('pointerup', onUp)
   canvas.addEventListener('pointercancel', onUp)
 
+  // ── keeping things in the box ──
+
+  /** Speed and spin limits: a thing can't move far enough in one step to skip through another. */
+  function limitSpeeds() {
+    for (const { body } of bodies.values()) {
+      if (Body.getSpeed(body) > T.maxSpeed) Body.setSpeed(body, T.maxSpeed)
+      if (Math.abs(body.angularVelocity) > T.maxSpin) Body.setAngularVelocity(body, Math.sign(body.angularVelocity) * T.maxSpin)
+    }
+  }
+
+  /** Safety net: anything that still ends up outside the box drops back in from the top. */
+  function rescueStrays() {
+    const m = THING_SIZE
+    for (const { body } of bodies.values()) {
+      const { x, y } = body.position
+      const out = x < -m || x > W + m || y > H + m || (ceiling && y < -m)
+      if (!out) continue
+      Body.setPosition(body, { x: m / 2 + Math.random() * Math.max(1, W - m), y: ceiling ? m / 2 + 2 : -m })
+      Body.setVelocity(body, { x: 0, y: 0 })
+      Body.setAngularVelocity(body, 0)
+    }
+  }
+
   // ── loop ──
   let raf = 0
   let last = performance.now()
   let acc = 0
-  const STEP = 1000 / 60 // fixed physics steps keep stacking stable
+  const STEP = 1000 / T.stepsPerSecond // fixed physics steps keep stacking stable
   const frame = (now: number) => {
-    acc = Math.min(acc + (now - last), STEP * 4) // after a pause, don't try to catch up
+    acc = Math.min(acc + (now - last), 1000 / 30) // after a pause, don't try to catch up
     last = now
     while (acc >= STEP) {
       Engine.update(engine, STEP)
+      limitSpeeds()
       acc -= STEP
     }
+    rescueStrays()
     if (pending.length && now >= nextDrop) {
       add(pending.shift()!)
       nextDrop = now + T.dropEvery
@@ -323,6 +372,11 @@ export function createStage(canvas: HTMLCanvasElement, opts: StageOptions = {}):
         Body.setVelocity(v.body, { x: (Math.random() - 0.5) * T.jumpSideways, y: -(lo + Math.random() * (hi - lo)) })
         Body.setAngularVelocity(v.body, (Math.random() - 0.5) * T.jumpSpin)
       }
+    },
+    positions() {
+      return Object.fromEntries(
+        [...bodies].map(([id, v]) => [id, { x: Math.round(v.body.position.x), y: Math.round(v.body.position.y), speed: +Body.getSpeed(v.body).toFixed(1) }]),
+      )
     },
     destroy() {
       cancelAnimationFrame(raf)

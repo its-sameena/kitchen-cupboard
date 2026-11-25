@@ -124,8 +124,11 @@ The **Toolbox** tab (between Cupboard and Groceries) shows the house's shared th
 | `dragStiffness`, `dragDamping` | How tightly a dragged thing follows your finger, and how much it wobbles | stiffness 0.05 loose to 0.3 tight |
 | `jumpUp`, `jumpSideways`, `jumpSpin` | The legend jump: upward speed range, sideways spread, spin | `jumpUp: [18, 25]` for higher jumps |
 | `dropEvery` | Time between things dropping in when the page opens (ms) | 60 quick cascade, 250 one by one |
+| `stepsPerSecond` | Physics accuracy: calculations per second. Higher = steadier stacks, fewer things passing through each other, more work for the phone | 60 light, 120 default, 240 very accurate (watch for stutter with many items) |
+| `maxSpeed` | Speed limit (px per 1/60 s). Stops hard flings from skipping through things; keep it below `size` | 24 calm, 36 default, 50 wild |
+| `maxSpin` | Spin limit (radians per 1/60 s) | 0.3–0.8 |
 
-The box has a floor, two walls and a ceiling, so nothing can be thrown out of view. While the Toolbox is open the page itself never scrolls; swipes belong to the physics.
+The box has a floor, two walls and a ceiling, so nothing can be thrown out of view. A drag can't pull a thing through a wall (the pull point stays inside the box), and as a safety net anything that still ends up outside drops back in from the top. While the Toolbox is open the page itself never scrolls; swipes belong to the physics.
 
 The Toolbox's sheets (a thing's details and + Add) **drop down from the top**, clear of the iPhone keyboard; drag the handle up to dismiss. Any sheet can do this: `<Sheet from="top">` in `src/components/ui.tsx` (styles: `.sheet.from-top` in `src/styles.css`).
 
