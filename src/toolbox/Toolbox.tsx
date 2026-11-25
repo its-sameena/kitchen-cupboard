@@ -29,16 +29,24 @@ export default function Toolbox() {
   const userOf = (id: string | null) => (id ? s.users.find((u) => u.id === id) : undefined)
   const colorOf = (holder: string | null) => userOf(holder)?.color ?? ELSEWHERE
 
-  // Fill the space between the top bar and the bottom tab bar.
+  // Fill the space between the top bar and the floating tab bar. Measured from where the
+  // tab bar really is, so the iPhone home-indicator strip (safe area) is accounted for.
   useLayoutEffect(() => {
+    const GAP = 12 // space between the legend row and the tab bar
     const fit = () => {
       const top = box.current?.getBoundingClientRect().top ?? 0
-      const tabbar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--tabbar-h')) || 64
-      setHeight(Math.max(320, window.innerHeight - top - tabbar - 28))
+      const bar = document.querySelector('.tabbar')?.getBoundingClientRect().top ?? window.innerHeight
+      setHeight(Math.max(260, Math.floor(bar - top - GAP)))
     }
     fit()
+    const again = requestAnimationFrame(fit) // once more after fonts/layout settle
     window.addEventListener('resize', fit)
-    return () => window.removeEventListener('resize', fit)
+    window.visualViewport?.addEventListener('resize', fit)
+    return () => {
+      cancelAnimationFrame(again)
+      window.removeEventListener('resize', fit)
+      window.visualViewport?.removeEventListener('resize', fit)
+    }
   }, [])
 
   useEffect(() => {
