@@ -57,8 +57,6 @@ export interface Stage {
   sync(things: StageThing[]): void
   /** Make these things jump (into everything else). */
   jump(ids: string[]): void
-  /** Where each thing is (for testing). */
-  positions(): Record<string, { x: number; y: number; angle: number }>
   destroy(): void
 }
 
@@ -304,9 +302,6 @@ export function createStage(canvas: HTMLCanvasElement, onTap: (id: string) => vo
         Body.setVelocity(v.body, { x: (Math.random() - 0.5) * TOOLBOX.jumpSideways, y: -(lo + Math.random() * (hi - lo)) })
         Body.setAngularVelocity(v.body, (Math.random() - 0.5) * TOOLBOX.jumpSpin)
       }
-    },
-    positions() {
-      return Object.fromEntries([...bodies].map(([id, v]) => [id, { x: Math.round(v.body.position.x), y: Math.round(v.body.position.y), angle: +v.body.angle.toFixed(2) }]))
     },
     destroy() {
       cancelAnimationFrame(raf)

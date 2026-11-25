@@ -10,7 +10,7 @@ import {
   ChevronRight, Clipboard, ClipboardCheck, ClipboardList, Coffee, Cookie, CookingPot, CornerDownRight,
   CupSoda, Droplet, Heart, House, Leaf, Lightbulb, MessageCircle, MessageSquare, Milk, Package, Pencil, Plus,
   ReceiptText, Refrigerator, Search, Share2, ShoppingBag, ShoppingBasket, ShoppingCart, Shuffle, Smartphone,
-  Snowflake, Sprout, Store, Trash2, TriangleAlert, Unplug, Wheat, WifiOff, X,
+  Snowflake, Sprout, Store, Toolbox, Trash2, TriangleAlert, Unplug, Wheat, WifiOff, X,
 } from 'lucide-react'
 import { ITEM_ICON_DATA } from './catalog/item-icons.ts'
 import type { CategoryId, EventType, FeedbackKind } from './types'
@@ -20,6 +20,7 @@ import type { CategoryId, EventType, FeedbackKind } from './types'
 export const UI = {
   // Tab bar (order and labels are in src/config.ts)
   cupboard: Archive,
+  toolbox: Toolbox,
   groceries: ClipboardList,
   groceryRun: ShoppingCart,
   house: House,

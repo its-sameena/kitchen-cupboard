@@ -34,7 +34,7 @@ npm run dev
 | **Fonts** | `index.html` + `src/theme.css` | Inter (text) and Instrument Serif (big titles). Pick fonts on [Google Fonts](https://fonts.google.com), replace the `<link>` in `index.html`, then set `--font-body` / `--font-display`. |
 | **Roundness, shadows, card size** | `src/theme.css` | `--radius` (cards, sheets), `--radius-sm` (item cards, inputs), `--shadow`, `--card-w` / `--card-h` (item cards on the shelves). |
 | **Animation speed and feel** | `src/theme.css` → Motion | See [animations.md](animations.md). |
-| **Tabs (order, names, start page)** | `src/config.ts` → `TABS`, `DEFAULT_TAB` | Array order = left to right. `label` is the tab text, `title` the big page title. |
+| **Tabs (order, names, start page)** | `src/config.ts` → `TABS`, `DEFAULT_TAB` | Array order = left to right. The tab bar shows icons only; `label` is read out by screen readers. `title` is the big page title (empty = none, like the Toolbox). |
 | **Icon sizes** | `src/config.ts` → `ICON_SIZES` | Pixels for item cards, shelf headings, lists, tabs, buttons. |
 | **Order of items on a shelf** | `src/config.ts` → `SHELF_ITEM_ORDER` | See [Ordering things](#ordering-things). |
 | **Shops for grocery runs** | `src/config.ts` → `STORES` | Name, border colour, optional logo; array order = button order. |
@@ -104,9 +104,9 @@ To change the logo size or background, change it in both places: `30vw` and `#f3
 
 Before either of these, iOS briefly shows a plain screen in the app's background colour (`background_color` in `vite.config.ts`). A custom iOS launch image was tried in v0.10.2 and removed, because it didn't line up with the page's logo.
 
-## Toolbox (prototype)
+## Toolbox
 
-The Toolbox shows the house's shared things piled on a ground line with physics, each drawn in its holder's colour (grey = Elsewhere). While it's a prototype, open it by adding **`#toolbox`** to the app's address (e.g. `http://<your Mac>:5173/#toolbox` with `npm run dev`). Its data is kept on each phone only.
+The **Toolbox** tab (between Cupboard and Groceries) shows the house's shared things piled on a ground line with physics, each drawn in its holder's colour (grey = Elsewhere). Things drop in from random spots every time you open the tab. The data is shared and live: tables `toolbox_things` and `toolbox_handovers` (migration `20261125000000_toolbox.sql`); every change goes through `add_thing`, `hand_over`, `undo_handover` and `remove_thing`, which also enforce that only whoever made the last change can undo it.
 
 **Look and feel:** every number is in the `TOOLBOX` block at the top of `src/toolbox/stage.ts`:
 
@@ -135,7 +135,7 @@ The Toolbox's sheets (a thing's details and + Add) **drop down from the top**, c
 - `.toolbox-add` is the **+**
 - `.thing-*` are the info sheet
 
-The grey for Elsewhere is `ELSEWHERE` in `src/toolbox/Toolbox.tsx`. The sample things a phone starts with are `SAMPLES` in `src/toolbox/data.ts`.
+The grey for Elsewhere is `ELSEWHERE` in `src/toolbox/Toolbox.tsx`.
 
 ## Doing it yourself vs asking Claude
 

@@ -163,6 +163,43 @@ for (const e of await as(P1, `select title, body from events`)) {
   assert.doesNotMatch(e.title + e.body, /\p{Extended_Pictographic}/u, `emoji in event: ${e.title}`)
 }
 
+// Toolbox: shared things, who has them, handover history and undo
+const drill = (await one(P1, `select add_thing($1, ' Drill ', 'package', $1) t`, [A])).t
+const holder = async () => (await one(P1, `select holder from toolbox_things where id = $1`, [drill])).holder
+assert.equal(await holder(), A)
+assert.equal((await one(P1, `select name from toolbox_things where id = $1`, [drill])).name, 'Drill')
+await fails(P1, `select undo_handover($1, $2)`, [A, drill], /Only the last change/) // adding isn't undoable
+await as(P2, `select hand_over($1, $2, $1)`, [S, drill]) // Sam: "I have this"
+await fails(P1, `select undo_handover($1, $2)`, [A, drill], /Only the last change/) // only Sam can undo Sam's change
+await as(P2, `select hand_over($1, $2, $3)`, [J, drill, S]) // same holder again: no change, no history
+assert.equal((await as(P1, `select * from toolbox_handovers where thing_id = $1`, [drill])).length, 2)
+await as(P2, `select hand_over($1, $2, $3)`, [J, drill, A]) // Jordan: "Alex has it" (on Alex's behalf)
+assert.equal(await holder(), A)
+await fails(P1, `select undo_handover($1, $2)`, [A, drill], /Only the last change/)
+await as(P2, `select undo_handover($1, $2)`, [J, drill]) // Jordan undoes -> back to the previous holder, Sam
+assert.equal(await holder(), S)
+await fails(P2, `select undo_handover($1, $2)`, [J, drill], /Only the last change/) // can't undo twice
+await as(P2, `select hand_over($1, $2, null)`, [S, drill]) // Elsewhere
+assert.equal(await holder(), null)
+await as(P2, `select undo_handover($1, $2)`, [S, drill])
+assert.equal(await holder(), S)
+await fails(P1, `select hand_over($1, $2, gen_random_uuid())`, [A, drill], /isn’t in this kitchen/)
+await fails(P1, `select add_thing($1, 'X', 'package', gen_random_uuid())`, [A], /isn’t in this kitchen/)
+assert.equal((await as(OUT, `select * from toolbox_things`)).length, 0, 'other kitchens see nothing')
+assert.equal((await as(OUT, `select * from toolbox_handovers`)).length, 0)
+await fails(OUT, `select hand_over($1, $2, $1)`, [A, drill], /Profile not found|not in a kitchen/)
+await fails(P1, `update toolbox_things set holder = $1 where id = $2`, [A, drill], /permission denied/)
+await fails(P1, `insert into toolbox_handovers (thing_id, kitchen_id, by_member) values ($1, $2, $3)`, [drill, k, A], /permission denied/)
+// A deleted profile's things go to Elsewhere
+const temp = (await profile(P1, 'Temp', '#123456')).member_id
+const lamp = (await one(P1, `select add_thing($1, 'Lamp', 'package', $2) t`, [A, temp])).t
+await as(P1, `select delete_profile($1)`, [temp])
+assert.equal((await one(P1, `select holder from toolbox_things where id = $1`, [lamp])).holder, null)
+// Removing a thing removes its history too
+await as(P1, `select remove_thing($1, $2)`, [A, lamp])
+assert.equal((await as(P1, `select * from toolbox_handovers where thing_id = $1`, [lamp])).length, 0)
+await fails(P1, `select remove_thing($1, $2)`, [A, lamp], /Thing not found/)
+
 // Feedback
 const fid = (await one(P2, `select submit_feedback($1, 'idea', 'Barcode scanner pls', '{"tab":"cupboard"}') f`, [J])).f
 const fb = await one(P1, `select * from feedback where id = $1`, [fid])

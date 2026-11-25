@@ -104,6 +104,9 @@ export interface KitchenState {
   items: Item[]
   grocery: GroceryEntry[]
   runs: GroceryRun[]
+  /** Toolbox: the house's shared things and how they've changed hands (newest last). */
+  things: Thing[]
+  handovers: Handover[]
   /** Runs each profile has cleared from its own Recent runs list. */
   hiddenRuns: { runId: string; memberId: string }[]
   events: KitchenEvent[]
@@ -124,4 +127,28 @@ export interface Feedback {
   editedAt?: number
   createdAt: number
   updatedAt: number
+}
+
+/** A shared household thing in the Toolbox. */
+export interface Thing {
+  id: string
+  name: string
+  /** Item icon key (src/catalog/item-icons.ts). */
+  icon: string
+  /** Profile id of whoever has it, or null = Elsewhere. */
+  holder: string | null
+  createdAt: number
+}
+
+/** One change of hands. Only `by` can undo it, and only while it's the latest. */
+export interface Handover {
+  id: string
+  thingId: string
+  from: string | null
+  to: string | null
+  by: string
+  at: number
+  /** The "added it" entry (not undoable). */
+  added: boolean
+  undone: boolean
 }

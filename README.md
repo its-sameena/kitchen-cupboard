@@ -138,6 +138,7 @@ Project map:
 | `src/catalog/` | Item icons, keyword rules, guesser tests (edited by `npm run tune`) |
 | `src/icons.tsx` | Interface and shelf icons (Lucide) |
 | `src/components/` | Screens |
+| `src/toolbox/` | The Toolbox tab: physics stage (`stage.ts`, tune via `TOOLBOX`), page and sheets |
 | `src/store.ts` | The only data layer (Supabase calls) |
 | `supabase/migrations/` | Database schema and functions |
 | `supabase/functions/` | `notify` (push) and `scan-receipt` (Gemini) |

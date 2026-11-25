@@ -15,9 +15,8 @@ import { subscribePush } from './notify'
 import { activeRun, clearError, dismissAvatarPrompt, setAvatar, eventsFor, markSeen, onNewEvents, useApp, useKitchen, useMe } from './store'
 import type { KitchenEvent } from './types'
 
-/** Toolbox prototype (open the app with #toolbox). Physics code loads only when opened. */
+/** Toolbox tab: its physics code is downloaded the first time someone opens it. */
 const Toolbox = lazy(() => import('./toolbox/Toolbox'))
-const isToolbox = () => location.hash === '#toolbox'
 
 type Tab = TabId
 
@@ -56,19 +55,8 @@ export default function App() {
 function Main() {
   const s = useKitchen()
   const me = useMe()!
-  const [tab, setTabState] = useState<Tab>(initialTab)
-  // Prototype page: shown instead of the current tab while the address ends in #toolbox.
-  const [toolbox, setToolbox] = useState(isToolbox)
-  useEffect(() => {
-    const on = () => setToolbox(isToolbox())
-    window.addEventListener('hashchange', on)
-    return () => window.removeEventListener('hashchange', on)
-  }, [])
-  const setTab = (t: Tab) => {
-    if (isToolbox()) history.replaceState(null, '', location.pathname + location.search)
-    setToolbox(false)
-    setTabState(t)
-  }
+  const [tab, setTab] = useState<Tab>(initialTab)
+  const toolbox = tab === 'toolbox'
   const [inboxOpen, setInboxOpen] = useState(false)
   const [feedbackOpen, setFeedbackOpen] = useState(false)
   const { avatarPrompt } = useApp()
@@ -149,7 +137,7 @@ function Main() {
       </header>
 
       {/* Keyed by tab so the title animates in again on every tab change */}
-      {!toolbox && (
+      {!!TABS.find((t) => t.id === tab)?.title && (
         <div className="page-title" key={tab}>
           <span className="kicker">{s.kitchenName}</span>
           <h1>{TABS.find((t) => t.id === tab)?.title}</h1>
@@ -167,17 +155,14 @@ function Main() {
       )}
 
       <main className={'content' + (toolbox ? ' content-toolbox' : '')}>
-        {toolbox ? (
+        {tab === 'cupboard' && <Cupboard />}
+        {tab === 'toolbox' && (
           <Suspense fallback={null}>
             <Toolbox />
           </Suspense>
-        ) : (
-          <>
-            {tab === 'cupboard' && <Cupboard />}
-            {tab === 'grocery' && <Groceries />}
-            {tab === 'house' && <House />}
-          </>
         )}
+        {tab === 'grocery' && <Groceries />}
+        {tab === 'house' && <House />}
       </main>
 
       <nav
@@ -319,7 +304,6 @@ function TabBtn({
         <Icon size={ICON_SIZES.tab} strokeWidth={on ? 2.2 : 1.8} />
         {!!badge && <span className="badge">{badge > 99 ? '99+' : badge}</span>}
       </span>
-      <span className="tab-label">{label}</span>
     </button>
   )
 }

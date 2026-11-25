@@ -5,12 +5,12 @@ import type { LucideIcon } from 'lucide-react'
 import { UI } from './icons'
 import type { Item } from './types'
 
-export type TabId = 'cupboard' | 'grocery' | 'house'
+export type TabId = 'cupboard' | 'toolbox' | 'grocery' | 'house'
 
 export interface TabConfig {
   id: TabId
   label: string
-  /** Big serif page title (shown under the kitchen name). */
+  /** Big serif page title (shown under the kitchen name); empty = no title. */
   title: string
   icon: LucideIcon
   /** Used instead while a grocery run is active (grocery tab only). */
@@ -21,6 +21,8 @@ export interface TabConfig {
 /** Bottom tab bar, left to right. Reorder these to reorder the tabs. */
 export const TABS: TabConfig[] = [
   { id: 'cupboard', label: 'Cupboard', title: 'Cupboard', icon: UI.cupboard },
+  // No page title: the physics stage fills the page (see src/toolbox/).
+  { id: 'toolbox', label: 'Toolbox', title: '', icon: UI.toolbox },
   { id: 'grocery', label: 'Groceries', title: 'Groceries', icon: UI.groceries, liveLabel: 'Grocery run', liveIcon: UI.groceryRun },
   { id: 'house', label: 'House', title: 'House', icon: UI.house },
 ]

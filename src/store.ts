@@ -109,7 +109,7 @@ async function fetchKitchen(): Promise<KitchenState | null> {
   const kitchen = await sb.from('kitchens').select('*').maybeSingle()
   if (kitchen.error) throw kitchen.error
   if (!kitchen.data) return null
-  const [members, items, grocery, runs, events, feedback, hidden] = await Promise.all([
+  const [members, items, grocery, runs, events, feedback, hidden, things, handovers] = await Promise.all([
     sb.from('members').select('*').order('joined_at'),
     sb.from('items').select('*'),
     sb.from('grocery').select('*').order('added_at'),
@@ -118,10 +118,15 @@ async function fetchKitchen(): Promise<KitchenState | null> {
     sb.from('events').select('*').order('at', { ascending: false }).limit(150),
     sb.from('feedback').select('*').order('created_at', { ascending: false }).limit(100),
     sb.from('run_hidden').select('run_id, member_id'),
+    sb.from('toolbox_things').select('*').order('created_at'),
+    sb.from('toolbox_handovers').select('*').order('at', { ascending: false }).limit(400),
   ])
   for (const r of [members, items, grocery, runs, events, feedback]) if (r.error) throw r.error
   // Optional: before the run_items migration is applied this table doesn't exist yet.
   const hiddenRuns = hidden.error ? [] : hidden.data.map((h) => ({ runId: h.run_id as string, memberId: h.member_id as string }))
+  // Optional too: before the toolbox migration is applied the Toolbox is just empty.
+  const toolboxThings = things.error ? [] : things.data
+  const toolboxHandovers = handovers.error ? [] : handovers.data
   const k = kitchen.data
   return {
     kitchenId: k.id,
@@ -165,6 +170,17 @@ async function fetchKitchen(): Promise<KitchenState | null> {
       itemCount: typeof r.item_count === 'number' ? r.item_count : null,
     })),
     hiddenRuns,
+    things: toolboxThings.map((t) => ({ id: t.id, name: t.name, icon: t.icon, holder: t.holder ?? null, createdAt: ms(t.created_at) })),
+    handovers: toolboxHandovers.reverse().map((h) => ({
+      id: h.id,
+      thingId: h.thing_id,
+      from: h.from_holder ?? null,
+      to: h.to_holder ?? null,
+      by: h.by_member,
+      at: ms(h.at),
+      added: h.added,
+      undone: h.undone,
+    })),
     events: events.data!.reverse().map((e) => ({
       id: e.id,
       type: e.type,
@@ -253,7 +269,7 @@ function setChannel(kitchenId: string | null) {
   if (!kitchenId) return
   // RLS limits inserts/updates to our kitchen; deletes only carry ids, so any delete triggers a refresh.
   channel = sb.channel(`kitchen:${kitchenId}`)
-  for (const table of ['kitchens', 'members', 'items', 'grocery', 'runs', 'events', 'feedback']) {
+  for (const table of ['kitchens', 'members', 'items', 'grocery', 'runs', 'events', 'feedback', 'toolbox_things', 'toolbox_handovers']) {
     channel.on('postgres_changes', { event: '*', schema: 'public', table }, scheduleRefresh)
   }
   channel.subscribe((status) => {
@@ -472,6 +488,27 @@ export function markBought(entryId: string) {
 }
 
 // ───────────────────────── grocery runs ─────────────────────────
+
+// ───────────────────────── toolbox ─────────────────────────
+
+/** Add a shared thing; holder null = Elsewhere. */
+export function addThing(name: string, icon: string, holder: string | null) {
+  act(rpcMe('add_thing', { p_name: name, p_icon: icon, p_holder: holder }))
+}
+
+/** Say who has it now (me, a housemate, or null = Elsewhere). */
+export function handOver(thingId: string, to: string | null) {
+  act(rpcMe('hand_over', { p_thing: thingId, p_to: to }))
+}
+
+/** Undo my latest change to this thing: it goes back to whoever had it before. */
+export function undoHandover(thingId: string) {
+  act(rpcMe('undo_handover', { p_thing: thingId }))
+}
+
+export function removeThing(thingId: string) {
+  act(rpcMe('remove_thing', { p_thing: thingId }))
+}
 
 /** Clear a run from this profile's Recent runs (housemates still see it; nothing is deleted). */
 export function hideRun(runId: string) {
