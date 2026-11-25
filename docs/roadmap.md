@@ -6,7 +6,7 @@ Effort: **tiny** (under an hour) · **small** (an evening) · **medium** (a few 
 
 ## Recommended order
 
-**Next up (agreed 25 Nov 2026):** after the Toolbox is merged, finish the **shorter add-item sheet** (`feature/short-add-sheet`: horizontal shelf row, keyboard-friendly). Bring it up to date with main, re-test on iPhone, polish, merge.
+**Next up (agreed 25 Nov 2026):** finish the **shorter add-item sheet** (`feature/short-add-sheet`: horizontal shelf row, keyboard-friendly). Bring it up to date with main, re-test on iPhone, polish, merge.
 
 1. **Quick-wins bundle:** home-screen badge (4), running low (A), grocery list in shop order (E), changelog and tags (9), refresh old icons (10).
 2. **Recipes with "What can I cook?"** (1 + C): the big idea from feedback.
@@ -51,7 +51,6 @@ Finished work parked on its own branch with a Vercel preview. Pick it up later, 
 | Branch | What | Status | Next |
 | --- | --- | --- | --- |
 | `feature/short-add-sheet` (v0.11.1) | Shorter add-item sheet that fits above the keyboard: one swipeable shelf row (follows the guess, edge fades, snapping), tap the big icon to change it, no "Item name" label, Return adds, no AutoFill Contact, sheets slide up smoothly with the keyboard with no hard bottom edge, page behind frozen and restored, "Report wrong guess" hidden for nonsense names. | Tested in the browser; first iPhone test felt clunky, fixes since then not yet tried on a phone. | Re-test on iPhone (Safari and home-screen app), record if still clunky, polish, merge. |
-| `feature/toolbox` (v0.15.0) | **Toolbox tab** (stage 2 built: shared and live via `toolbox_things` / `toolbox_handovers`, own tab between Cupboard and Groceries, icon-only tab bar). Started as a prototype: the house's shared things piled on a ground line with physics (Matter.js), drawn in the holder's colour (grey = Elsewhere). Tap one: I have this / someone else has it / undo (only by whoever made the change) / recent handovers. Tap a housemate below the ground to make their things jump; + adds a thing that drops from the sky. | Built; DB tests pass. Needs migration `20261125000000_toolbox.sql` applied, then a phone test. | Apply the migration, test on phone, merge. |
 | `feature/arcade` (v0.12.0) | Secret Kitchen Arcade (tap the logo 7 times): Shelf Breaker and Stack the Shelf, best scores on the phone only. | Play-tested in the browser. | Play-test on iPhone, tune difficulty, merge. |
 
 Both branches started from main before later changes; merge main into them (or rebase) before merging.
@@ -76,6 +75,7 @@ Recommended: S1, S2 and S3 now; then S4 + S5; S9 once.
 
 ## Done
 
+- v0.15.0: **Toolbox** tab between Cupboard and Groceries: shared household things on a physics stage, drawn in the holder's colour, with I have this / someone else has it / undo and handover history, shared live via `toolbox_things` + `toolbox_handovers`. Tab bar is icons only. Custom steamer and massage gun icons.
 - v0.13.0 (branch `feature/run-details`): recent runs show how many items were bought, and tapping a run lists everything bought and who it went to (feedback 849362db). New `run_items` table; runs before 21 Nov 2026 have no details. Swipe a run left to clear it from your own list (per profile, nothing deleted; `run_hidden` table, migration `20261124000000_run_hidden.sql`).
 - v0.11.0: rotating top-bar greetings (36 approved, in `src/greetings.ts`).
 - v0.10.2: logo-first loading screen (the iOS launch-image version was tried and removed).
