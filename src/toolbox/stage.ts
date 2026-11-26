@@ -20,9 +20,9 @@ export const TOOLBOX = {
   /** Thickness of the black ground line (px). */
   ground: 2.5,
   /** Gravity: 1 = normal, higher = things fall faster and feel heavier. */
-  gravity: 1.1,
+  gravity: 0.6,
   /** Bounciness on landing: 0 = thud, 1 = superball. */
-  bounce: 0.25,
+  bounce: 0.75,
   /** Sliding friction: 0 = ice, 1 = rubber. */
   friction: 0.6,
   /** How hard it is to start a resting thing sliding (0–1). */

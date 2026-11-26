@@ -51,7 +51,6 @@ Finished work parked on its own branch with a Vercel preview. Pick it up later, 
 | Branch | What | Status | Next |
 | --- | --- | --- | --- |
 | `feature/short-add-sheet` (v0.11.1) | Shorter add-item sheet that fits above the keyboard: one swipeable shelf row (follows the guess, edge fades, snapping), tap the big icon to change it, no "Item name" label, Return adds, no AutoFill Contact, sheets slide up smoothly with the keyboard with no hard bottom edge, page behind frozen and restored, "Report wrong guess" hidden for nonsense names. | Tested in the browser; first iPhone test felt clunky, fixes since then not yet tried on a phone. | Re-test on iPhone (Safari and home-screen app), record if still clunky, polish, merge. |
-| `feature/playground` (v0.16.0) | **Secret physics playground:** 5 taps on the top-left icon; every in-stock cupboard item piles up in its owner's colour, full screen, no ceiling, look-and-play only. | Built, tested in the browser. | Try on a phone, tune `PLAYGROUND`, merge. Later: make it one of the arcade's games. |
 | `feature/arcade` (v0.12.0) | Secret Kitchen Arcade (tap the logo 7 times): Shelf Breaker and Stack the Shelf, best scores on the phone only. | Play-tested in the browser. | Play-test on iPhone, tune difficulty, merge. **Its 7-tap trigger clashes with the playground's 5 taps**: when merging, open one secret place (the arcade) and add the playground as one of its games. |
 
 Both branches started from main before later changes; merge main into them (or rebase) before merging.
@@ -89,6 +88,7 @@ Recommended: S1, S2 and S3 now; then S4 + S5; S9 once.
 
 ## Done
 
+- v0.16.3: **Secret physics playground** (5 taps on the top-left icon): every in-stock cupboard item piles up full screen in its owner's colour. Physics now runs at 120 steps/s with speed and spin limits, drags stay inside the box, and strays drop back in, so fast things no longer clip through or vanish (Toolbox too). Livelier tuning: gravity 0.6, bounce 0.75. Later: make the playground one of the arcade's games.
 - v0.15.0: **Toolbox** tab between Cupboard and Groceries: shared household things on a physics stage, drawn in the holder's colour, with I have this / someone else has it / undo and handover history, shared live via `toolbox_things` + `toolbox_handovers`. Tab bar is icons only. Custom steamer and massage gun icons.
 - v0.13.0 (branch `feature/run-details`): recent runs show how many items were bought, and tapping a run lists everything bought and who it went to (feedback 849362db). New `run_items` table; runs before 21 Nov 2026 have no details. Swipe a run left to clear it from your own list (per profile, nothing deleted; `run_hidden` table, migration `20261124000000_run_hidden.sql`).
 - v0.11.0: rotating top-bar greetings (36 approved, in `src/greetings.ts`).
